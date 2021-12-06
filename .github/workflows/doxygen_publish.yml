@@ -1,0 +1,23 @@
+name: Build and publish Doxygen docs
+on:
+  release:
+    types: published
+
+jobs: 
+  build-docs:
+    runs-on: ubuntu-latest
+    name: Build doxygen docs
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install doxygen
+        run: sudo apt-get install -y doxygen
+      - name: Configure CMake
+        run: cmake -B ${{github.workspace}}/build -DBUILD_DOC=ON
+      - name: Build doxygen docs
+        run: cmake --build ${{github.workspace}}/build
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/doc_doxygen/html/
+
