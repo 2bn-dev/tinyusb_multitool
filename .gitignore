@@ -1,2 +1,3 @@
 build/
 examples/build/
+src/git_info.h

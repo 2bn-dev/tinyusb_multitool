@@ -22,10 +22,11 @@ target_link_libraries(
 	tinyusb_multitool
 	pico_stdlib
 	pico_time
+	tinyusb_device
 	)
 
-#pico_enable_stdio_usb(test_app 1)
-#pico_enable_stdio_uart(test_app 0)
+pico_enable_stdio_usb(test_app 0)
+pico_enable_stdio_uart(test_app 1)
 
 # create map/bin/hex/uf2 file in addition to ELF.
 pico_add_extra_outputs(test_app)

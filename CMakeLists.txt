@@ -4,24 +4,53 @@ cmake_minimum_required(VERSION 3.13)
 
 
 option(BUILD_DOC "Build documentation" OFF)
+project(tinyusb_multitool C ASM)
 
+
+set(GIT_INFO_H ${CMAKE_CURRENT_LIST_DIR}/src/git_info.h)
+add_custom_target(update_git_info DEPENDS ${GIT_INFO_H})
+
+add_custom_command(OUTPUT ${GIT_INFO_H}
+        COMMENT "Generating ${GIT_INFO_H}"
+        DEPENDS ${CMAKE_CURRENT_LIST_DIR}/.git/index
+        COMMAND ${CMAKE_COMMAND} -E echo_append " #define GIT_REV 0x" > ${GIT_INFO_H}
+        COMMAND git rev-parse --short=8 HEAD >> ${GIT_INFO_H}
+        )
 
 if (PICO_SDK_PATH)
-	project(tinyusb_multitool C ASM)
-	
 	add_library(tinyusb_multitool INTERFACE)
 
 	target_sources(tinyusb_multitool INTERFACE
 		${CMAKE_CURRENT_LIST_DIR}/src/tinyusb_multitool.c
+		${CMAKE_CURRENT_LIST_DIR}/src/tinyusb_multitool.h
+		${CMAKE_CURRENT_LIST_DIR}/src/tinyusb_multitool_config.c
 		${CMAKE_CURRENT_LIST_DIR}/src/tinyusb_multitool_debug.h
+		#${CMAKE_CURRENT_LIST_DIR}/src/program_flash_generic.c
+		#${CMAKE_CURRENT_LIST_DIR}/src/program_flash_generic.h
+		#${CMAKE_CURRENT_LIST_DIR}/src/resets.h
+		#${CMAKE_CURRENT_LIST_DIR}/src/unique_id_modified.h
+		#${CMAKE_CURRENT_LIST_DIR}/src/unique_id_modified.c
+		${CMAKE_CURRENT_LIST_DIR}/src/tusb_config.h
+
+
 		)
 	target_include_directories( tinyusb_multitool INTERFACE
 		${CMAKE_CURRENT_LIST_DIR}/src
 		)
+	add_dependencies(tinyusb_multitool update_git_info)
+
+	target_link_libraries(
+		tinyusb_multitool INTERFACE
+		pico_stdlib
+		pico_time
+		tinyusb_device
+		boot_uf2_headers
+		hardware_flash
+		pico_unique_id
+		)
 
 	return()
 elseif(BUILD_DOC)
-	project(tinyusb_multitool C ASM)
 	# check if Doxygen is installed
 	find_package(Doxygen)
 	if (DOXYGEN_FOUND)
