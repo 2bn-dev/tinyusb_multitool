@@ -8,4 +8,10 @@ The goal is to have a more extensible interface for both USB storage (msc) and U
  * Raspberry Pi 2040
 
 ### Attribution
- Portions of this software come from https://github.com/raspberrypi/pico-sdk/tree/master/src/rp2_common/pico_stdio_usb under the MIT or BSD-3-Clause license.
+ Portions of this software come from 
+
+ * https://github.com/raspberrypi/pico-sdk
+ * https://github.com/raspberrypi/pico-bootrom
+ * https://github.com/raspberrypi/tinyusb
+
+under the MIT or BSD-3-Clause license.
