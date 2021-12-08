@@ -35,8 +35,10 @@ bool until(absolute_time_t timestamp){
 
 int main(){
 	stdio_uart_init();
+	tumt_usb_init();
+
 	printf("start!\n");
-	tumt_uart_usb_init();
+
 	uint32_t i = 0;
 	while(1){
 		const absolute_time_t next_tick = delayed_by_ms(get_absolute_time(), 1000);
