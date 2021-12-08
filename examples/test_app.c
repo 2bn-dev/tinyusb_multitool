@@ -27,20 +27,20 @@ void warning(const char * detail){
 	printf("\n\nWARNING: %s!\n\n\n", detail);
 }
 
-bool __no_inline_not_in_flash_func(until)(absolute_time_t timestamp){
+bool until(absolute_time_t timestamp){
 	return (get_absolute_time() <= timestamp);
 }
 
 
 
-int __no_inline_not_in_flash_func(main)(){
+int main(){
 	stdio_uart_init();
 	printf("start!\n");
 	tumt_uart_usb_init();
 	uint32_t i = 0;
 	while(1){
 		const absolute_time_t next_tick = delayed_by_ms(get_absolute_time(), 1000);
-		_DBG("test2 %llu", next_tick);
+		_DBG("test %llu", next_tick);
 		while(until(next_tick)){
 			/*
 			 * tumt_periodic_task() is used to do tinyUSB data transfer callbacks.

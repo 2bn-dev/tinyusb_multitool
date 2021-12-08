@@ -42,15 +42,19 @@
 
 #ifndef TINYUSB_MULTITOOL_CONFIG_H
 #define TINYUSB_MULTITOOL_CONFIG_H
-
+#define PARAM_ASSERTIONS_ENABLED_FLASH 1
 
 #include "tusb.h"
 #include "tinyusb_multitool_debug.h"
 #include "boot/uf2.h"
 #include "hardware/watchdog.h"
-#include "hardware/flash.h"
-#include "pico/unique_id.h"
-//#include "unique_id_modified.h"
+//#include "pico/unique_id.h"
+#include <stdlib.h>
+#include "pico/bootrom.h"
+
+#include "flash.h"
+
+#include "unique_id_modified.h"
 //#include "program_flash_generic.h"
 
 #define USBD_VID (0x2E8A) // Raspberry Pi
@@ -490,10 +494,10 @@ void memset0(void *dest, uint n) {
 CU_REGISTER_DEBUG_PINS(flash);
 
 
-
+/*
 static uint32_t __no_inline_not_in_flash_func(_do_flash_enter_cmd_xip)();
 static uint32_t __no_inline_not_in_flash_func(_do_flash_exit_xip)();
-static uint32_t __no_inline_not_in_flash_func(_do_flash_erase_sector)(uint32_t addr);
+static uint32_t __no_inline_not_in_flash_func(_do_flash_erase_sector)(uint32_t addr, bool enable_xip);
 static uint32_t __no_inline_not_in_flash_func(_do_flash_erase_range)(uint32_t addr, uint32_t len);
 static uint32_t __no_inline_not_in_flash_func(_do_flash_page_program)(uint32_t addr, uint8_t *data);
 static uint32_t __no_inline_not_in_flash_func(_do_flash_page_read)(uint32_t addr, uint8_t *data);
@@ -518,9 +522,9 @@ static const struct flash_funcs {
 };
 
 const struct flash_funcs *flash_funcs;
+*/
 
-
-
+/*
 static uint32_t __no_inline_not_in_flash_func(_do_flash_enter_cmd_xip)() {
     _DBG("flash enter cmd XIP\n");
     //flash_enter_cmd_xip();
@@ -576,12 +580,12 @@ static uint32_t __no_inline_not_in_flash_func(_do_flash_page_read)(uint32_t addr
 }
 
 static uint8_t _last_mutation_source;
-
-
+*/
+/*
 static uint32_t __no_inline_not_in_flash_func(_execute_task)(struct async_task *task) {
     uint32_t ret;
     uint type = task->type;
-    /*
+    
     if (type & AT_VECTORIZE_FLASH) {
         if (task->transfer_addr & 1u) {
             return PICOBOOT_BAD_ALIGNMENT;
@@ -593,7 +597,7 @@ static uint32_t __no_inline_not_in_flash_func(_execute_task)(struct async_task *
         } else {
             return PICOBOOT_INVALID_ADDRESS;
         }
-    }*/
+    }
     if (type & AT_EXCLUSIVE) {
         // we do this in executex task, so we know we aren't executing and virtual_disk_queue tasks at this moment
         _DBG("SET EXCLUSIVE ACCESS %d\n", task->exclusive_param);
@@ -678,8 +682,8 @@ static uint32_t __no_inline_not_in_flash_func(_execute_task)(struct async_task *
 static void _task_copy(struct async_task *to, struct async_task *from) {
 	memcpy(to, from, sizeof(struct async_task));
 }
-
-
+*/
+/*
 void __no_inline_not_in_flash_func(sync_execute_task)(struct async_task *task, async_task_callback callback) {
 	task->callback = callback;
 
@@ -689,9 +693,10 @@ void __no_inline_not_in_flash_func(sync_execute_task)(struct async_task *task, a
 	if (task->callback) task->callback(task);
 }
 
-
+*/
 
 // return true for async
+/*
 static bool __no_inline_not_in_flash_func(_write_uf2_page)() {
     // If we need to write a page (i.e. it hasn't been written before, then we queue a task to do that asynchronously
     //
@@ -763,7 +768,7 @@ static bool __no_inline_not_in_flash_func(_write_uf2_page)() {
     }
     return false; // not async
 }
-
+*/
 static void _clear_bitset(uint32_t *mask, uint32_t count) {
 	    memset0(mask, count / 8);
 }
@@ -976,6 +981,8 @@ int32_t __no_inline_not_in_flash_func(tud_msc_read10_cb)(uint8_t lun, uint32_t l
 }
 
 void __no_inline_not_in_flash_func(tumt_periodic_task)(void);
+int64_t __no_inline_not_in_flash_func(flash_erase_and_move)(alarm_id_t id, void *user_data);
+//int64_t __no_inline_not_in_flash_func(flash_erase_and_move)(/*alarm_id_t id, void *user_data){ */uint32_t flash1_start, uint32_t flash2_start, uint32_t flash2_len);
 
 #define FLASH_OFFSET 1*1024*1024
 // Callback invoked when received WRITE10 command.
@@ -989,22 +996,28 @@ int32_t __no_inline_not_in_flash_func(tud_msc_write10_cb)(uint8_t lun, uint32_t 
 				// if we have a valid uf2 page, write it
 				tumt_periodic_task();
 
-				_DBG("Write: %d, %d (%d/%d)", uf2->target_addr - XIP_MAIN_BASE, uf2->payload_size, uf2->block_no, uf2->num_blocks);
+				//_DBG("Write: %d, %d (%d/%d)", uf2->target_addr - XIP_MAIN_BASE, uf2->payload_size, uf2->block_no, uf2->num_blocks);
 				uint32_t save = save_and_disable_interrupts();
 				if((uf2->target_addr - XIP_MAIN_BASE+FLASH_OFFSET) % 4096 == 0){
-					_DBG("Flash erase");
-					flash_range_erase(uf2->target_addr - XIP_MAIN_BASE+FLASH_OFFSET, 4096);
+					//_DBG("Flash erase");
+					flash_range_erase(uf2->target_addr - XIP_MAIN_BASE+FLASH_OFFSET, 4096, true);
 				}
-				_DBG("flash_range_program(%lu, [], %d)",(uf2->target_addr - XIP_MAIN_BASE+FLASH_OFFSET), uf2->payload_size);
-				flash_range_program(uf2->target_addr - XIP_MAIN_BASE+FLASH_OFFSET, uf2->data, uf2->payload_size);
+				//_DBG("flash_range_program(%lu, [], %d)",(uf2->target_addr - XIP_MAIN_BASE+FLASH_OFFSET), uf2->payload_size);
+				flash_range_program(uf2->target_addr - XIP_MAIN_BASE+FLASH_OFFSET, uf2->data, uf2->payload_size, true);
 				restore_interrupts(save);
 
 				tumt_periodic_task();
 
 				
-				//if(uf2->block_no == uf2->num_blocks){
-				//	safe_reboot(_uf2_info.ram ? _uf2_info.lowest_addr : 0, SRAM_END, 1000);
-				///}
+				if(uf2->block_no == uf2->num_blocks-1){ //block_no is 0 indexed
+					uint32_t * arguments = (void *) malloc(sizeof(uint32_t)*3);
+					memset(arguments, 0x0, sizeof(uint32_t)*3);
+					arguments[0] = 0x0;
+					arguments[1] = 0x0+FLASH_OFFSET;
+					arguments[2] = ((uf2->target_addr - XIP_MAIN_BASE)+uf2->payload_size);
+					bool rc = add_alarm_in_ms(100, flash_erase_and_move,  arguments, true);
+					//flash_erase_and_move(arguments[0], arguments[1], arguments[2]);
+				} 
 				return bufsize;
 
 			}
@@ -1031,6 +1044,54 @@ int32_t __no_inline_not_in_flash_func(tud_msc_write10_cb)(uint8_t lun, uint32_t 
 	}
 
 	return bufsize;
+}
+
+uint32_t * __no_inline_not_in_flash_func(__memcpy_ram)(uint8_t * address_to, const uint8_t * address_from, uint32_t length) {
+	rom_memcpy_fn rom_memcpy = (rom_memcpy_fn)rom_func_lookup_inline(ROM_FUNC_MEMCPY);
+	assert(rom_memcpy);
+	rom_memcpy(address_to, address_from, length);
+}
+
+uint32_t * __no_inline_not_in_flash_func(__memset_ram)(uint8_t * address, uint8_t value, uint32_t length) {
+	rom_memset_fn rom_memset = (rom_memset_fn)rom_func_lookup_inline(ROM_FUNC_MEMSET);
+	assert(memset_fn);
+	rom_memset(address, value, length);
+}
+
+int64_t __no_inline_not_in_flash_func(flash_erase_and_move)(alarm_id_t id, void *user_data){ //uint32_t flash1_start, uint32_t flash2_start, uint32_t flash2_len){
+	uint32_t * user_data2 = (uint32_t *) user_data;
+	uint32_t flash1_start = user_data2[0];
+	uint32_t flash2_start = user_data2[1];
+	uint32_t flash2_len = user_data2[2];
+	free(user_data);
+	
+	uint8_t buf[4096];
+
+
+
+	_DBG("user_data: %lu, %lu, %lu", flash1_start, flash2_start, flash2_len);
+	_DBG("No further logging beyond this point, flash rewrite beginning, if successful device will reboot");
+	//Logging is not possible, because we're rewriting flash, and the memory addresses of functions and strings will be erased and replaced.
+	//I've tried a few ways to work around this, and I think basically the only way would be to have a ram only image that gets loaded to handle this process.
+
+	//Theoretically copy flash2 to flash1 in stage2 bootloader mode-ish using hardware/flash.h
+	uint32_t save = save_and_disable_interrupts();
+
+	for(uint32_t i = flash1_start; i < flash1_start+flash2_len; i+=256){
+		if(i%4096 == 0){
+			flash_range_erase(i, 4096, true);
+		}
+
+
+		__memset_ram(buf, 0x0, 4096);
+		uint8_t *ptr_src = (void *) (i-flash1_start+flash2_start+XIP_NOCACHE_NOALLOC_BASE);
+		__memcpy_ram(buf, ptr_src, 256);
+		
+		flash_range_program(i, buf, 256, true);
+
+	}
+	//restore_interrupts(save);
+	safe_reboot(0, SRAM_END, 1000);
 }
 
 // Callback invoked when received an SCSI command not in built-in list below

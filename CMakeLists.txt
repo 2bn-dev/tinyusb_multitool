@@ -25,11 +25,11 @@ if (PICO_SDK_PATH)
 		${CMAKE_CURRENT_LIST_DIR}/src/tinyusb_multitool.h
 		${CMAKE_CURRENT_LIST_DIR}/src/tinyusb_multitool_config.c
 		${CMAKE_CURRENT_LIST_DIR}/src/tinyusb_multitool_debug.h
-		#${CMAKE_CURRENT_LIST_DIR}/src/program_flash_generic.c
-		#${CMAKE_CURRENT_LIST_DIR}/src/program_flash_generic.h
+		${CMAKE_CURRENT_LIST_DIR}/src/flash.c
+		${CMAKE_CURRENT_LIST_DIR}/src/flash.h
 		#${CMAKE_CURRENT_LIST_DIR}/src/resets.h
-		#${CMAKE_CURRENT_LIST_DIR}/src/unique_id_modified.h
-		#${CMAKE_CURRENT_LIST_DIR}/src/unique_id_modified.c
+		${CMAKE_CURRENT_LIST_DIR}/src/unique_id_modified.h
+		${CMAKE_CURRENT_LIST_DIR}/src/unique_id_modified.c
 		${CMAKE_CURRENT_LIST_DIR}/src/tusb_config.h
 
 
@@ -45,8 +45,6 @@ if (PICO_SDK_PATH)
 		pico_time
 		tinyusb_device
 		boot_uf2_headers
-		hardware_flash
-		pico_unique_id
 		)
 
 	return()
