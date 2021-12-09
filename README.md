@@ -13,6 +13,7 @@ The goal is to have a more extensible interface for both USB storage (msc) and U
 - [x] USB Mass storage flash interface similar to bootloader
 - [x] Flashing RP2040 via USB MSC
 - [ ] Loading RP2040 RAM only image via USB MSC
+- [x] UART_Bridge ESP32 ESP_SYNC detection and enter ESP32 flash mode via GPIO.
 - [ ] Flashing ESP32 via USB MSC over UART0
 - [x] STDIO to USB Serial port
 - [x] UART Bridge uart0 to USB Serial port
