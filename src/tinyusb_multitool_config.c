@@ -40,9 +40,6 @@
 // source: https://github.com/raspberrypi/pico-bootrom/blob/master/bootrom/virtual_disk.c
 // Source: https://github.com/raspberrypi/tinyusb/blob/pico/examples/device/cdc_msc/src/usb_descriptors.c
 
-#ifndef TINYUSB_MULTITOOL_CONFIG_H
-#define TINYUSB_MULTITOOL_CONFIG_H
-
 #define PARAM_ASSERTIONS_ENABLED_FLASH 1
 
 #include "tusb.h"
@@ -745,4 +742,3 @@ int32_t __no_inline_not_in_flash_func(tud_msc_scsi_cb)(uint8_t lun, uint8_t cons
   return resplen;
 }
 
-#endif

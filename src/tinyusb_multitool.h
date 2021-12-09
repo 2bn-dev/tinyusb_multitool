@@ -7,11 +7,15 @@
 #define TINYUSB_MULTITOOL_H
 #include "tusb.h"
 #include "tinyusb_multitool_debug.h"
+#include "tumt_uart_bridge.h"
 
 
 bool tumt_uart_usb_connected(void);
 void tumt_periodic_task(void);
 bool tumt_usb_init(void);
 mutex_t tumt_get_usb_mutex(void);
+bool tumt_usb_stdio_connected(void);
+bool tumt_usb_uart0_connected(void);
+bool tumt_usb_uart1_connected(void);
 
 #endif

@@ -62,6 +62,10 @@
 #define USBD_ITF_MSC		(6) // needs 1 interface
 #define USBD_ITF_MAX       	(7)
 
+#define CDCD_ITF_STDIO		(0) //Not sure where these numbers come from, guessing it's the descriptor order?
+#define CDCD_ITF_UART0		(1)
+#define CDCD_ITF_UART1		(2)
+
 #define USBD_CDC_CMD_MAX_SIZE    (8)
 #define USBD_CDC_IN_OUT_MAX_SIZE (64)
 #define USBD_MSC_IN_OUT_MAX_SIZE (64)
@@ -85,8 +89,8 @@
 #define USBD_STR_SERIAL		(0x03)
 #define USBD_STR_MSC		(0x04)
 #define USBD_STR_CDC_STDIO	(0x05)
-#define USBD_STR_CDC_UART0	(0x05)
-#define USBD_STR_CDC_UART1	(0x05)
+#define USBD_STR_CDC_UART0	(0x06)
+#define USBD_STR_CDC_UART1	(0x07)
 
 
 // Fri, 05 Sep 2008 16:20:51

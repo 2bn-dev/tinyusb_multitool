@@ -31,7 +31,7 @@ void tumt_uart_bridge_uart0_init(uint32_t baud_rate){
 	current_baud_rate_uart0 = uart_init(uart0, baud_rate);
 	uart_set_format(uart0, 8, 1, UART_PARITY_NONE);
 	uart_set_translate_crlf(uart0, false);
-	bool rc = add_alarm_in_us(TUMT_UART_BRIDGE_TASK_INTERVAL_US, tumt_uart_bridge_uart0_timer, NULL, true);
+	//bool rc = add_alarm_in_us(TUMT_UART_BRIDGE_TASK_INTERVAL_US, tumt_uart_bridge_uart0_timer, NULL, true);
 }
 
 
@@ -44,7 +44,7 @@ void tumt_uart_bridge_uart1_init(uint32_t baud_rate){
 	uart_set_format(uart1, 8, 1, UART_PARITY_NONE);
 	uart_set_translate_crlf(uart1, false);
 
-	bool rc = add_alarm_in_us(TUMT_UART_BRIDGE_TASK_INTERVAL_US, tumt_uart_bridge_uart1_timer, NULL, true);
+	//bool rc = add_alarm_in_us(TUMT_UART_BRIDGE_TASK_INTERVAL_US, tumt_uart_bridge_uart1_timer, NULL, true);
 }
 
 void tumt_uart_bridge_uart0_deinit(){
@@ -111,35 +111,36 @@ int32_t read_buf_write_uart0 = 0;
 bool match_found_uart0 = false;
 #endif
 
-int tumt_uart_bridge_uart0_in_out(mutex_t tumt_usb_mutex){
+int tumt_uart_bridge_uart0_in_out(mutex_t *tumt_usb_mutex){
     	static uint64_t last_avail_time;
 	uint32_t owner;
 
-	if (!mutex_try_enter(&tumt_usb_mutex, &owner)) {
+
+	if (!mutex_try_enter(tumt_usb_mutex, &owner)) {
 		if (owner == get_core_num()) return 0; // would deadlock otherwise
-		mutex_enter_blocking(&tumt_usb_mutex);
+		mutex_enter_blocking(tumt_usb_mutex);
 	}
 
-	if (!tud_cdc_n_connected(USBD_ITF_CDC_UART0)) {
-		mutex_exit(&tumt_usb_mutex);
+	if (!tud_cdc_n_connected(CDCD_ITF_UART0)) {
+		mutex_exit(tumt_usb_mutex);
 		return 0;
 	}
 
-	while(uart_is_readable(uart0) && tud_cdc_n_connected(USBD_ITF_CDC_UART0) && tud_cdc_n_write_available(USBD_ITF_CDC_UART0) > 0){
+	while(uart_is_readable(uart0) && tud_cdc_n_connected(CDCD_ITF_UART0) && tud_cdc_n_write_available(CDCD_ITF_UART0) > 0){
 		int32_t buf = uart_getc(uart0);
 		if(buf >= 0){
-			tud_cdc_n_write_char(USBD_ITF_CDC_UART0, buf);
+			tud_cdc_n_write_char(CDCD_ITF_UART0, buf);
 	                tud_task();
-	                tud_cdc_n_write_flush(USBD_ITF_CDC_UART0);
-			tud_task();
 	                last_avail_time = time_us_64();
 		}
 	}
 
+	tud_cdc_n_write_flush(CDCD_ITF_UART0);
+
 	//uart_tx_wait_blocking(uart0);
-	while(uart_is_writable(uart0) && tud_cdc_n_connected(USBD_ITF_CDC_UART0) && tud_cdc_n_available(USBD_ITF_CDC_UART0)){
+	while(uart_is_writable(uart0) && tud_cdc_n_connected(CDCD_ITF_UART0) && tud_cdc_n_available(CDCD_ITF_UART0)){
 		int32_t buf;
-		 buf = tud_cdc_n_read_char(USBD_ITF_CDC_UART0);
+		 buf = tud_cdc_n_read_char(CDCD_ITF_UART0);
 		if(buf < 0){
 			break;
 		}
@@ -186,7 +187,7 @@ int tumt_uart_bridge_uart0_in_out(mutex_t tumt_usb_mutex){
 #endif
 	}
 
-	mutex_exit(&tumt_usb_mutex);
+	mutex_exit(tumt_usb_mutex);
 	return 0;
 }
 
@@ -197,35 +198,33 @@ int32_t read_buf_write_uart1 = 0;
 bool match_found_uart1 = false;
 #endif
 
-int tumt_uart_bridge_uart1_in_out(mutex_t tumt_usb_mutex){
+int tumt_uart_bridge_uart1_in_out(mutex_t *tumt_usb_mutex){
         static uint64_t last_avail_time;
         uint32_t owner;
-
-        if (!mutex_try_enter(&tumt_usb_mutex, &owner)) {
+        if (!mutex_try_enter(tumt_usb_mutex, &owner)) {
                 if (owner == get_core_num()) return 0; // would deadlock otherwise
-                mutex_enter_blocking(&tumt_usb_mutex);
+                mutex_enter_blocking(tumt_usb_mutex);
         }
 
-        if (!tud_cdc_n_connected(USBD_ITF_CDC_UART1)) {
-                mutex_exit(&tumt_usb_mutex);
+        if (!tud_cdc_n_connected(CDCD_ITF_UART1)) {
+                mutex_exit(tumt_usb_mutex);
                 return 0;
         }
 
-        while(uart_is_readable(uart1) && tud_cdc_n_connected(USBD_ITF_CDC_UART1) && tud_cdc_n_write_available(USBD_ITF_CDC_UART1) > 0){
+        while(uart_is_readable(uart1) && tud_cdc_n_connected(CDCD_ITF_UART1) && tud_cdc_n_write_available(CDCD_ITF_UART1) > 0){
                 int32_t buf = uart_getc(uart1);
                 if(buf >= 0){
-                        tud_cdc_n_write_char(USBD_ITF_CDC_UART1, buf);
-                        tud_task();
-                        tud_cdc_n_write_flush(USBD_ITF_CDC_UART1);
+                        tud_cdc_n_write_char(CDCD_ITF_UART1, buf);
                         tud_task();
                         last_avail_time = time_us_64();
                 }
         }
 
+	tud_cdc_n_write_flush(CDCD_ITF_UART1);
         //uart_tx_wait_blocking(uart1);
-        while(uart_is_writable(uart1) && tud_cdc_n_connected(USBD_ITF_CDC_UART1) && tud_cdc_n_available(USBD_ITF_CDC_UART1)){
+        while(uart_is_writable(uart1) && tud_cdc_n_connected(CDCD_ITF_UART1) && tud_cdc_n_available(CDCD_ITF_UART1)){
                 int32_t buf;
-                 buf = tud_cdc_n_read_char(USBD_ITF_CDC_UART1);
+                 buf = tud_cdc_n_read_char(CDCD_ITF_UART1);
                 if(buf < 0){
                         break;
                 }
@@ -272,7 +271,7 @@ int tumt_uart_bridge_uart1_in_out(mutex_t tumt_usb_mutex){
 #endif
         }
 
-        mutex_exit(&tumt_usb_mutex);
+        mutex_exit(tumt_usb_mutex);
         return 0;
 }
 
