@@ -9,17 +9,16 @@
 #ifndef TUMT_UART_BRIDGE_TASK_INTERVAL_US
 #define TUMT_UART_BRIDGE_TASK_INTERVAL_US 1000
 #endif
-void tumt_uart_bridge_uart0_init(uint32_t baud_rate);
-static int64_t tumt_uart_bridge_uart0_timer(__unused alarm_id_t id, __unused void *user_data);
-void tumt_uart_bridge_uart1_init(uint32_t baud_rate);
-void tumt_uart_bridge_uart0_deinit();
 
+static int64_t tumt_uart_bridge_uart0_timer(__unused alarm_id_t id, __unused void *user_data);
+void tumt_uart_bridge_uart0_init(uint32_t baud_rate);
+
+static int64_t tumt_uart_bridge_uart1_timer(__unused alarm_id_t id, __unused void *user_data);
+void tumt_uart_bridge_uart1_init(uint32_t baud_rate);
+
+void tumt_uart_bridge_uart0_deinit();
 void tumt_uart_bridge_uart1_deinit();
 void tumt_uart_bridge_pin_init(void);
 
-
-
-int tumt_stdio_usb_in_chars(char *buf, int length);
-
-
 int tumt_uart_bridge_uart0_in_out();
+int tumt_uart_bridge_uart1_in_out();

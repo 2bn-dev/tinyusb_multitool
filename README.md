@@ -16,7 +16,7 @@ The goal is to have a more extensible interface for both USB storage (msc) and U
 - [ ] Flashing ESP32 via USB MSC over UART0
 - [x] STDIO to USB Serial port
 - [x] UART Bridge uart0 to USB Serial port
-- [ ] UART Bridge uart1 to USB Serial port
+- [x] UART Bridge uart1 to USB Serial port
 - [ ] I2C0/1 Bridge to USB Serial Port
 - [ ] Increased configurability (USB Mass storage on/off, Serial on/off for each)
 - [ ] Custom USB interface extensibility?
