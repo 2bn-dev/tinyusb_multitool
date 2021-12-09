@@ -10,6 +10,12 @@
 #define TUMT_UART_BRIDGE_TASK_INTERVAL_US 1000
 #endif
 
+
+#ifndef TUMT_UART_BRIDGE_ENABLE_ESP32_SYNC_DETECT
+#define TUMT_UART_BRIDGE_ENABLE_ESP32_SYNC_DETECT 1
+#endif
+
+
 static int64_t tumt_uart_bridge_uart0_timer(__unused alarm_id_t id, __unused void *user_data);
 void tumt_uart_bridge_uart0_init(uint32_t baud_rate);
 

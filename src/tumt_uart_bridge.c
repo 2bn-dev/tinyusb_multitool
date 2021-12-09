@@ -103,10 +103,13 @@ void tumt_uart_bridge_pin_init(void){
 
 
 
+
 //Read buffer for ESP32 Sync identification
+#if TUMT_UART_BRIDGE_ENABLE_ESP32_SYNC_DETECT == 1
 char read_buf_uart0[128] = {0};
 int32_t read_buf_write_uart0 = 0;
 bool match_found_uart0 = false;
+#endif
 
 int tumt_uart_bridge_uart0_in_out(mutex_t tumt_usb_mutex){
     	static uint64_t last_avail_time;
@@ -142,7 +145,7 @@ int tumt_uart_bridge_uart0_in_out(mutex_t tumt_usb_mutex){
 		}
 		uart_putc_raw(uart0, buf);
 
-
+#if TUMT_UART_BRIDGE_ENABLE_ESP32_SYNC_DETECT == 1
 		read_buf_uart0[read_buf_write_uart0] = buf;
 		read_buf_write_uart0++;
 		if(read_buf_write_uart0 >= sizeof(read_buf_uart0)){
@@ -169,7 +172,7 @@ int tumt_uart_bridge_uart0_in_out(mutex_t tumt_usb_mutex){
 						//ESP Sync magic found, enter flash mode
 						gpio_pull_up(PIN_ESP32_FLASH);
 						gpio_pull_up(PIN_ESP32_EN);
-						sleep_ms(1);
+						busy_wait_ms(1);
 						gpio_pull_down(PIN_ESP32_EN);
 						match_found_uart0 = true;
 						//TODO: We need to flip this back after ESP32 Image
@@ -180,6 +183,7 @@ int tumt_uart_bridge_uart0_in_out(mutex_t tumt_usb_mutex){
 				}
 			}
 		}
+#endif
 	}
 
 	mutex_exit(&tumt_usb_mutex);
@@ -187,9 +191,11 @@ int tumt_uart_bridge_uart0_in_out(mutex_t tumt_usb_mutex){
 }
 
 //Read buffer for ESP32 Sync identification
+#if TUMT_UART_BRIDGE_ENABLE_ESP32_SYNC_DETECT == 1
 char read_buf_uart1[128] = {0};
 int32_t read_buf_write_uart1 = 0;
 bool match_found_uart1 = false;
+#endif
 
 int tumt_uart_bridge_uart1_in_out(mutex_t tumt_usb_mutex){
         static uint64_t last_avail_time;
@@ -225,7 +231,7 @@ int tumt_uart_bridge_uart1_in_out(mutex_t tumt_usb_mutex){
                 }
                 uart_putc_raw(uart1, buf);
 
-
+#if TUMT_UART_BRIDGE_ENABLE_ESP32_SYNC_DETECT == 1
                 read_buf_uart1[read_buf_write_uart1] = buf;
                 read_buf_write_uart1++;
                 if(read_buf_write_uart1 >= sizeof(read_buf_uart1)){
@@ -252,7 +258,7 @@ int tumt_uart_bridge_uart1_in_out(mutex_t tumt_usb_mutex){
                                                 //ESP Sync magic found, enter flash mode
                                                 gpio_pull_up(PIN_ESP32_FLASH);
                                                 gpio_pull_up(PIN_ESP32_EN);
-                                                sleep_ms(1);
+                                                busy_wait_ms(1);
                                                 gpio_pull_down(PIN_ESP32_EN);
                                                 match_found_uart1 = true;
                                                 //TODO: We need to flip this back after ESP32 Image
@@ -263,6 +269,7 @@ int tumt_uart_bridge_uart1_in_out(mutex_t tumt_usb_mutex){
                                 }
                         }
                 }
+#endif
         }
 
         mutex_exit(&tumt_usb_mutex);
