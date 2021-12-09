@@ -12,5 +12,6 @@
 bool tumt_uart_usb_connected(void);
 void tumt_periodic_task(void);
 bool tumt_usb_init(void);
+mutex_t tumt_get_usb_mutex(void);
 
 #endif

@@ -6,6 +6,7 @@
 #include "stdio.h"
 #include "pico/stdio_uart.h"
 #include "tinyusb_multitool.h"
+#include "tumt_uart_bridge.h"
 #include "tusb.h"
 
 
@@ -36,6 +37,9 @@ bool until(absolute_time_t timestamp){
 int main(){
 	stdio_uart_init();
 	tumt_usb_init();
+	tumt_uart_bridge_uart0_init(115200);
+	//tumt_uart_bridge_uart1_init(921600);
+	tumt_uart_bridge_pin_init();
 
 	printf("start!\n");
 

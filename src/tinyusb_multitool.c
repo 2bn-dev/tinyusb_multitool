@@ -11,6 +11,7 @@
 #include "hardware/irq.h"
 #include "pico/stdio/driver.h"
 #include "tumt_usb_config.h"
+#include "tumt_uart_bridge.h"
 
 static mutex_t tumt_usb_mutex;
 
@@ -20,13 +21,20 @@ static mutex_t tumt_usb_mutex;
 static_assert(TUMT_USB_LOW_PRIORITY_IRQ > RTC_IRQ, ""); // note RTC_IRQ is currently the last one
 
 
+
+mutex_t  tumt_get_usb_mutex(){
+	return tumt_usb_mutex;
+}
+
 void __no_inline_not_in_flash_func(tumt_periodic_task)(void) {
 	//Non-blocking mutex, if it's already owned we'll hit it next time around.
 	if (mutex_try_enter(&tumt_usb_mutex, NULL)) {
-
 		tud_task();
 	        mutex_exit(&tumt_usb_mutex);
 	}
+
+	//tumt_uart_bridge_uart0_in_out(&tumt_usb_mutex);
+	//tumt_uart_bridge_uart1_in_out();
 }
 
 static int64_t timer_task(__unused alarm_id_t id, __unused void *user_data) {
@@ -43,22 +51,22 @@ static void tumt_stdio_usb_out_chars(const char *buf, int length) {
         if (owner == get_core_num()) return; // would deadlock otherwise
         mutex_enter_blocking(&tumt_usb_mutex);
     }
-    if (tud_cdc_n_connected(USBD_ITF_CDC_STDIO_DATA)) {
+    if (tud_cdc_n_connected(USBD_ITF_CDC_STDIO)) {
         for (int i = 0; i < length;) {
             int n = length - i;
-            int avail = (int) tud_cdc_n_write_available(USBD_ITF_CDC_STDIO_DATA);
+            int avail = (int) tud_cdc_n_write_available(USBD_ITF_CDC_STDIO);
             if (n > avail) n = avail;
             if (n) {
-                int n2 = (int) tud_cdc_n_write(USBD_ITF_CDC_STDIO_DATA, buf + i, (uint32_t)n);
+                int n2 = (int) tud_cdc_n_write(USBD_ITF_CDC_STDIO, buf + i, (uint32_t)n);
                 tud_task();
-                tud_cdc_n_write_flush(USBD_ITF_CDC_STDIO_DATA);
+                tud_cdc_n_write_flush(USBD_ITF_CDC_STDIO);
                 i += n2;
                 last_avail_time = time_us_64();
             } else {
                 tud_task();
-                tud_cdc_n_write_flush(USBD_ITF_CDC_STDIO_DATA);
-                if (!tud_cdc_n_connected(USBD_ITF_CDC_STDIO_DATA) ||
-                    (!tud_cdc_n_write_available(USBD_ITF_CDC_STDIO_DATA) && time_us_64() > last_avail_time + TUMT_UART_USB_STDOUT_TIMEOUT_US)) {
+                tud_cdc_n_write_flush(USBD_ITF_CDC_STDIO);
+                if (!tud_cdc_n_connected(USBD_ITF_CDC_STDIO) ||
+                    (!tud_cdc_n_write_available(USBD_ITF_CDC_STDIO) && time_us_64() > last_avail_time + TUMT_UART_USB_STDOUT_TIMEOUT_US)) {
                     break;
                 }
             }
@@ -77,8 +85,8 @@ int tumt_stdio_usb_in_chars(char *buf, int length) {
         mutex_enter_blocking(&tumt_usb_mutex);
     }
     int rc = PICO_ERROR_NO_DATA;
-    if (tud_cdc_n_connected(USBD_ITF_CDC_STDIO_DATA) && tud_cdc_n_available(USBD_ITF_CDC_STDIO_DATA)) {
-        int count = (int) tud_cdc_n_read(USBD_ITF_CDC_STDIO_DATA, buf, (uint32_t) length);
+    if (tud_cdc_n_connected(USBD_ITF_CDC_STDIO) && tud_cdc_n_available(USBD_ITF_CDC_STDIO)) {
+        int count = (int) tud_cdc_n_read(USBD_ITF_CDC_STDIO, buf, (uint32_t) length);
         rc =  count ? count : PICO_ERROR_NO_DATA;
     }
     mutex_exit(&tumt_usb_mutex);
@@ -109,13 +117,13 @@ bool tumt_usb_init(void) {
 }
 
 bool tumt_usb_stdio_connected(void) {
-	return tud_cdc_n_connected(USBD_ITF_CDC_STDIO_DATA);
+	return tud_cdc_n_connected(USBD_ITF_CDC_STDIO);
 }
 
 bool tumt_usb_uart0_connected(void) {
-	return tud_cdc_n_connected(USBD_ITF_CDC_UART0_DATA);
+	return tud_cdc_n_connected(USBD_ITF_CDC_UART0);
 }
 
 bool tumt_usb_uart1_connected(void) {
-	return tud_cdc_n_connected(USBD_ITF_CDC_UART1_DATA);
+	return tud_cdc_n_connected(USBD_ITF_CDC_UART1);
 }
