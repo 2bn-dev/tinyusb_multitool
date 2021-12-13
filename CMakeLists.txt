@@ -23,16 +23,16 @@ if (PICO_SDK_PATH)
 	target_sources(tinyusb_multitool INTERFACE
 		${CMAKE_CURRENT_LIST_DIR}/src/tinyusb_multitool.c
 		${CMAKE_CURRENT_LIST_DIR}/src/tinyusb_multitool.h
-		${CMAKE_CURRENT_LIST_DIR}/src/tinyusb_multitool_config.c
-		${CMAKE_CURRENT_LIST_DIR}/src/tinyusb_multitool_debug.h
+		${CMAKE_CURRENT_LIST_DIR}/src/tumt_usb_config.c
+		${CMAKE_CURRENT_LIST_DIR}/src/tumt_usb_config.h
+		${CMAKE_CURRENT_LIST_DIR}/src/tumt_debug.h
+		${CMAKE_CURRENT_LIST_DIR}/src/tumt_uart_bridge.c
+		${CMAKE_CURRENT_LIST_DIR}/src/tumt_uart_bridge.h
 		${CMAKE_CURRENT_LIST_DIR}/src/flash.c
 		${CMAKE_CURRENT_LIST_DIR}/src/flash.h
 		${CMAKE_CURRENT_LIST_DIR}/src/unique_id_modified.h
 		${CMAKE_CURRENT_LIST_DIR}/src/unique_id_modified.c
 		${CMAKE_CURRENT_LIST_DIR}/src/tusb_config.h
-		${CMAKE_CURRENT_LIST_DIR}/src/tumt_uart_bridge.c
-		${CMAKE_CURRENT_LIST_DIR}/src/tumt_uart_bridge.h
-		${CMAKE_CURRENT_LIST_DIR}/src/tumt_usb_config.h 
 
 
 		)
