@@ -44,7 +44,7 @@
 #define TINYUSB_MULTITOOL_USBCONFIG_H
 
 #include "tusb.h"
-#include "tinyusb_multitool_debug.h"
+#include "tumt_debug.h"
 
 #define USBD_VID (0x2E8A) // Raspberry Pi
 #define USBD_PID (0xF00b) // TODO: DO NOT USE

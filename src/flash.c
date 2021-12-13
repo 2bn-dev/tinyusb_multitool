@@ -10,7 +10,7 @@
 #include "hardware/structs/ssi.h"
 #include "hardware/structs/ioqspi.h"
 
-#include "tinyusb_multitool_debug.h"
+#include "tumt_debug.h"
 
 #define FLASH_BLOCK_ERASE_CMD 0xd8
 

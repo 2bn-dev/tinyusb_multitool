@@ -6,7 +6,7 @@
 #ifndef TINYUSB_MULTITOOL_H
 #define TINYUSB_MULTITOOL_H
 #include "tusb.h"
-#include "tinyusb_multitool_debug.h"
+#include "tumt_debug.h"
 #include "tumt_uart_bridge.h"
 
 

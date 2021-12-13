@@ -43,7 +43,6 @@
 #define PARAM_ASSERTIONS_ENABLED_FLASH 1
 
 #include "tusb.h"
-#include "tinyusb_multitool_debug.h"
 #include "boot/uf2.h"
 #include "hardware/watchdog.h"
 #include <stdlib.h>
