@@ -14,7 +14,7 @@
 void get_absolute_time() return 0;
 #endif
 
-#ifdef NDEBUG
+#ifndef NDEBUG
 #ifndef _DBG
 #define _DBG(fmt, ...) \
 	do{ fprintf(stdout, "%llu [%s:%d](%s) - " fmt "\n", \
