@@ -46,6 +46,7 @@ if (PICO_SDK_PATH)
 		pico_stdlib
 		pico_time
 		tinyusb_device
+		pico_util
 		boot_uf2_headers
 		)
 
