@@ -297,7 +297,6 @@ struct async_task {
     bool check_last_mutation_source;
 };
 
-
 // note caller must pass SECTOR_SIZE buffer
 void init_dir_entry(struct dir_entry *entry, const char *fn, uint cluster, uint len) {
     entry->creation_time_frac = RASPBERRY_PI_TIME_FRAC;
@@ -311,74 +310,46 @@ void init_dir_entry(struct dir_entry *entry, const char *fn, uint cluster, uint 
     entry->size = len;
 }
 
-
-
-// note these two macros may only be used once per complilation unit
-#define CU_REGISTER_DEBUG_PINS(p...) enum __unused DEBUG_PIN_TYPE { _none = 0, p }; static enum DEBUG_PIN_TYPE __selected_debug_pins;
-#define CU_SELECT_DEBUG_PINS(x) static enum DEBUG_PIN_TYPE __selected_debug_pins = (x);
-
-// Drive high every GPIO appearing in mask
-static inline void gpio_set_mask(uint32_t mask) {
-    *(volatile uint32_t *) (SIO_BASE + SIO_GPIO_OUT_SET_OFFSET) = mask;
-}
-
-// Drive low every GPIO appearing in mask
-static inline void gpio_clr_mask(uint32_t mask) {
-    *(volatile uint32_t *) (SIO_BASE + SIO_GPIO_OUT_CLR_OFFSET) = mask;
-}
-
-// Toggle every GPIO appearing in mask
-static inline void gpio_xor_mask(uint32_t mask) {
-    *(volatile uint32_t *) (SIO_BASE + SIO_GPIO_OUT_XOR_OFFSET) = mask;
-}
-
-#define DEBUG_PINS_ENABLED(p) (__selected_debug_pins == (p))
-#define DEBUG_PINS_SET(p, v) if (DEBUG_PINS_ENABLED(p)) gpio_set_mask((unsigned)(v)<<PIN_DBG1)
-#define DEBUG_PINS_CLR(p, v) if (DEBUG_PINS_ENABLED(p)) gpio_clr_mask((unsigned)(v)<<PIN_DBG1)
-#define DEBUG_PINS_XOR(p, v) if (DEBUG_PINS_ENABLED(p)) gpio_xor_mask((unsigned)(v)<<PIN_DBG1)
-
-
-
 static struct {
-    uint32_t serial_number32;
-    bool serial_number_valid;
+	uint32_t serial_number32;
+	bool serial_number_valid;
 } boot_device_state;
 
 uint32_t msc_get_serial_number32() {
-    if (!boot_device_state.serial_number_valid) {
-        boot_device_state.serial_number32 = to_ms_since_boot(get_absolute_time());
-        boot_device_state.serial_number_valid = true;
-    }
-    return boot_device_state.serial_number32;
+	if (!boot_device_state.serial_number_valid) {
+		boot_device_state.serial_number32 = to_ms_since_boot(get_absolute_time());
+		boot_device_state.serial_number_valid = true;
+	}
+	return boot_device_state.serial_number32;
 }
 
 
 void __no_inline_not_in_flash_func(safe_reboot)(uint32_t addr, uint32_t sp, uint32_t delay_ms) {
-	    watchdog_reboot(addr, sp, delay_ms);
+	watchdog_reboot(addr, sp, delay_ms);
 }
 
 static void __no_inline_not_in_flash_func(_write_uf2_page_complete)(struct async_task *task) {
-        if (!task->result && _uf2_info.valid_block_count == _uf2_info.num_blocks) {
-            safe_reboot(_uf2_info.ram ? _uf2_info.lowest_addr : 0, SRAM_END, 1000); //300); // reboot in 300 ms
-        }
+	if (!task->result && _uf2_info.valid_block_count == _uf2_info.num_blocks) {
+		safe_reboot(_uf2_info.ram ? _uf2_info.lowest_addr : 0, SRAM_END, 1000); //300); // reboot in 300 ms
+	}
 }
 
 
 
 // note these are inclusive to save - 1 checks... we always test the start and end of a range, so the range would have to be zero length which we don't use
 static inline bool is_address_ram(uint32_t addr) {
-    // todo allow access to parts of USB ram?
-    return (addr >= SRAM_BASE && addr <= SRAM_END) ||
-           (addr >= XIP_SRAM_BASE && addr <= XIP_SRAM_END);
+	// todo allow access to parts of USB ram?
+	return 	(addr >= SRAM_BASE && addr <= SRAM_END) ||
+		(addr >= XIP_SRAM_BASE && addr <= XIP_SRAM_END);
 }
 
 static inline bool is_address_flash(uint32_t addr) {
-    // todo maybe smaller?
-    return (addr >= XIP_MAIN_BASE && addr <= SRAM_BASE);
+	// todo maybe smaller?
+	return (addr >= XIP_MAIN_BASE && addr <= SRAM_BASE);
 }
 
 static inline bool is_address_rom(uint32_t addr) {
-    return addr < 8192;
+	return addr < 8192;
 }
 
 
@@ -386,19 +357,14 @@ void memset0(void *dest, uint n) {
 	memset(dest, 0, n);
 }
 
-CU_REGISTER_DEBUG_PINS(flash);
-
-
 
 static void _clear_bitset(uint32_t *mask, uint32_t count) {
-	    memset0(mask, count / 8);
+	memset0(mask, count / 8);
 }
 
 void reset_task(struct async_task *task) {
 	memset0(task, sizeof(struct async_task));
 }
-void __no_inline_not_in_flash_func(tumt_periodic_task)(void);
-
 static bool __no_inline_not_in_flash_func(_update_current_uf2_info)(struct uf2_block *uf2) {
 	bool ram = is_address_ram(uf2->target_addr) && is_address_ram(uf2->target_addr + (FLASH_PAGE_MASK));
 
@@ -508,10 +474,9 @@ bool __no_inline_not_in_flash_func(tud_msc_start_stop_cb)(uint8_t lun, uint8_t p
 
 // Callback invoked when received READ10 command.
 // Copy disk's data to buffer (up to bufsize) and return number of copied bytes.
-int32_t __no_inline_not_in_flash_func(tud_msc_read10_cb)(uint8_t lun, uint32_t lba, uint32_t offset, void* buf, uint32_t bufsize)
-{
+int32_t __no_inline_not_in_flash_func(tud_msc_read10_cb)(uint8_t lun, uint32_t lba, uint32_t offset, void* buf, uint32_t bufsize){
   	(void) lun;
-	assert(buf_size >= SECTOR_SIZE);
+	assert(bufsize >= SECTOR_SIZE);
     	memset(buf, 0x0, SECTOR_SIZE);
 
 	if (!lba) {
@@ -545,11 +510,12 @@ int32_t __no_inline_not_in_flash_func(tud_msc_read10_cb)(uint8_t lun, uint32_t l
 			// mirror
 			while (lba >= SECTORS_PER_FAT) lba -= SECTORS_PER_FAT;
 			if (!lba) {
-			uint16_t *p = (uint16_t *) buf;
+				uint16_t *p = (uint16_t *) buf;
 				p[0] = 0xff00u | MEDIA_TYPE;
 				p[1] = 0xffff;
 				p[2] = 0xffff; // cluster2 is index.htm
 				p[3] = 0xffff; // cluster3 is info_uf2.txt
+				p[4] = 0xffff; // cluster4 is readme.txt
 			}
 		}else{
 			lba -= SECTORS_PER_FAT * FAT_COUNT;
@@ -562,6 +528,7 @@ int32_t __no_inline_not_in_flash_func(tud_msc_read10_cb)(uint8_t lun, uint32_t l
 					entries[0].attr = ATTR_VOLUME_LABEL | ATTR_ARCHIVE;
 					init_dir_entry(++entries, "INDEX   HTM", 2, WELCOME_HTML_LEN);
 					init_dir_entry(++entries, "INFO_UF2TXT", 3, INFO_UF2_TXT_LEN);
+					init_dir_entry(++entries, "README  TXT", 4, README_TXT_LEN);
 				}
 			}else{
 				lba -= ROOT_DIRECTORY_SECTORS;
@@ -570,8 +537,10 @@ int32_t __no_inline_not_in_flash_func(tud_msc_read10_cb)(uint8_t lun, uint32_t l
 				if (!cluster_offset) {
 					if (cluster == 0) {
 						memcpy(buf, WELCOME_HTML, WELCOME_HTML_LEN);
-					}else if( cluster == 1){
+					}else if(cluster == 1){
 						memcpy(buf, INFO_UF2_TXT, INFO_UF2_TXT_LEN);
+					}else if(cluster == 2){
+						memcpy(buf, README_TXT, README_TXT_LEN);
 					}
 				}
 			}
@@ -648,13 +617,13 @@ int32_t __no_inline_not_in_flash_func(tud_msc_write10_cb)(uint8_t lun, uint32_t 
 	return bufsize;
 }
 
-uint32_t * __no_inline_not_in_flash_func(__memcpy_ram)(uint8_t * address_to, const uint8_t * address_from, uint32_t length) {
+uint32_t * __no_inline_not_in_flash_func(__memcpy_ram)(uint8_t * address_to, const uint8_t * address_from, uint32_t length){
 	rom_memcpy_fn rom_memcpy = (rom_memcpy_fn)rom_func_lookup_inline(ROM_FUNC_MEMCPY);
 	assert(rom_memcpy);
 	rom_memcpy(address_to, address_from, length);
 }
 
-uint32_t * __no_inline_not_in_flash_func(__memset_ram)(uint8_t * address, uint8_t value, uint32_t length) {
+uint32_t * __no_inline_not_in_flash_func(__memset_ram)(uint8_t * address, uint8_t value, uint32_t length){
 	rom_memset_fn rom_memset = (rom_memset_fn)rom_func_lookup_inline(ROM_FUNC_MEMSET);
 	assert(memset_fn);
 	rom_memset(address, value, length);
@@ -662,6 +631,7 @@ uint32_t * __no_inline_not_in_flash_func(__memset_ram)(uint8_t * address, uint8_
 
 int64_t __no_inline_not_in_flash_func(flash_erase_and_move)(alarm_id_t id, void *user_data){ //uint32_t flash1_start, uint32_t flash2_start, uint32_t flash2_len){
 	uint32_t * user_data2 = (uint32_t *) user_data;
+
 	uint32_t flash1_start = user_data2[0];
 	uint32_t flash2_start = user_data2[1];
 	uint32_t flash2_len = user_data2[2];
@@ -694,13 +664,13 @@ int64_t __no_inline_not_in_flash_func(flash_erase_and_move)(alarm_id_t id, void 
 	}
 	//restore_interrupts(save);
 	safe_reboot(0, SRAM_END, 1000);
+	return;
 }
 
 // Callback invoked when received an SCSI command not in built-in list below
 // - READ_CAPACITY10, READ_FORMAT_CAPACITY, INQUIRY, MODE_SENSE6, REQUEST_SENSE
 // - READ10 and WRITE10 has their own callbacks
-int32_t __no_inline_not_in_flash_func(tud_msc_scsi_cb)(uint8_t lun, uint8_t const scsi_cmd[16], void* buffer, uint16_t bufsize)
-{
+int32_t __no_inline_not_in_flash_func(tud_msc_scsi_cb)(uint8_t lun, uint8_t const scsi_cmd[16], void* buffer, uint16_t bufsize){
   // read10 & write10 has their own callback and MUST not be handled here
 
   void const* response = NULL;
@@ -728,13 +698,10 @@ int32_t __no_inline_not_in_flash_func(tud_msc_scsi_cb)(uint8_t lun, uint8_t cons
   // return resplen must not larger than bufsize
   if ( resplen > bufsize ) resplen = bufsize;
 
-  if ( response && (resplen > 0) )
-  {
-    if(in_xfer)
-    {
+  if ( response && (resplen > 0) ){
+    if(in_xfer){
       memcpy(buffer, response, resplen);
-    }else
-    {
+    }else{
       // SCSI output
     }
   }
