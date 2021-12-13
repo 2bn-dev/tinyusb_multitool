@@ -63,7 +63,7 @@ void tumt_uart_bridge_pin_init(void){
 	gpio_set_function(PIN_RXD1, GPIO_FUNC_UART);
 
 
-	//TODO: IFDEF
+#ifdef PIN_ESP32_FLASH
         gpio_init(PIN_ESP32_FLASH);
         gpio_init(PIN_ESP32_EN);
 
@@ -73,6 +73,8 @@ void tumt_uart_bridge_pin_init(void){
 	sleep_ms(1);
 	gpio_pull_down(PIN_ESP32_EN);
 	//This resets ESP32
+#endif
+
 }
 
 
