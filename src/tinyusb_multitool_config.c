@@ -558,7 +558,6 @@ int32_t __no_inline_not_in_flash_func(tud_msc_read10_cb)(uint8_t lun, uint32_t l
 	return bufsize;
 }
 
-void tumt_periodic_task();
 
 
 // Callback invoked when received WRITE10 command.
@@ -570,19 +569,17 @@ int32_t __no_inline_not_in_flash_func(tud_msc_write10_cb)(uint8_t lun, uint32_t 
 		if (uf2->flags & UF2_FLAG_FAMILY_ID_PRESENT && uf2->file_size == RP2040_FAMILY_ID && !(uf2->flags & UF2_FLAG_NOT_MAIN_FLASH) && uf2->payload_size == 256) {
 			if (_update_current_uf2_info(uf2)) {
 				// if we have a valid uf2 page, write it
-				tumt_periodic_task();
 
-				//_DBG("Write: %d, %d (%d/%d)", uf2->target_addr - XIP_MAIN_BASE, uf2->payload_size, uf2->block_no, uf2->num_blocks);
-				uint32_t save = save_and_disable_interrupts();
+				_DBG("Write: %d, %d (%d/%d)", uf2->target_addr - XIP_MAIN_BASE, uf2->payload_size, uf2->block_no, uf2->num_blocks);
+				//uint32_t save = save_and_disable_interrupts();
 				if((uf2->target_addr - XIP_MAIN_BASE+FLASH_OFFSET) % 4096 == 0){
-					//_DBG("Flash erase");
+					_DBG("Flash erase");
+					
 					flash_range_erase(uf2->target_addr - XIP_MAIN_BASE+FLASH_OFFSET, 4096, true);
 				}
-				//_DBG("flash_range_program(%lu, [], %d)",(uf2->target_addr - XIP_MAIN_BASE+FLASH_OFFSET), uf2->payload_size);
+				_DBG("flash_range_program(%lu, [], %d)",(uf2->target_addr - XIP_MAIN_BASE+FLASH_OFFSET), uf2->payload_size);
 				flash_range_program(uf2->target_addr - XIP_MAIN_BASE+FLASH_OFFSET, uf2->data, uf2->payload_size, true);
-				restore_interrupts(save);
-
-				tumt_periodic_task();
+				//restore_interrupts(save);
 
 				
 				if(uf2->block_no == uf2->num_blocks-1){ //block_no is 0 indexed
@@ -660,11 +657,11 @@ void __no_inline_not_in_flash_func(flash_erase_and_move_core1_entry)(){
 
 	_DBG("user_data: %lu, %lu, %lu", flash1_start, flash2_start, flash2_len);
 	_DBG("No further logging beyond this point, flash rewrite beginning, if successful device will reboot");
+
 	//Logging is not possible, because we're rewriting flash, and the memory addresses of functions and strings will be erased and replaced.
 	//I've tried a few ways to work around this, and I think basically the only way would be to have a ram only image that gets loaded to handle this process.
 
 	//Theoretically copy flash2 to flash1 in stage2 bootloader mode-ish using hardware/flash.h
-	uint32_t save = save_and_disable_interrupts();
 
 	for(uint32_t i = flash1_start; i < flash1_start+flash2_len; i+=256){
 		if(i%4096 == 0){
