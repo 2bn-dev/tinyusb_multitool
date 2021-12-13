@@ -380,6 +380,9 @@ static bool __no_inline_not_in_flash_func(_update_current_uf2_info)(struct uf2_b
 	} else if (!0 /*virtual_disk_queue.disable*/) {
 		if (_uf2_info.num_blocks != uf2->num_blocks) {
 			_DBG("Resetting active UF2 transfer because have new binary size %d->%d\n", (int) _uf2_info.num_blocks, (int) uf2->num_blocks);
+			_DBG("flash_pending_cb()");
+			flash_pending_cb();
+			_DBG("flash_pending_cb() complete");
 			memset(&_uf2_info, 0x0, sizeof(_uf2_info));
 			_uf2_info.ram = ram;
 			_uf2_info.valid_blocks = ram ? uf2_valid_ram_blocks : (uint32_t *) FLASH_VALID_BLOCKS_BASE;
