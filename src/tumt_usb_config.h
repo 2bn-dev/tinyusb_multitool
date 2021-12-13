@@ -47,7 +47,7 @@
 #include "tinyusb_multitool_debug.h"
 
 #define USBD_VID (0x2E8A) // Raspberry Pi
-#define USBD_PID (0x100b) // TODO: DO NOT USE
+#define USBD_PID (0xF00b) // TODO: DO NOT USE
 
 
 #define USBD_DESC_LEN (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + TUD_CDC_DESC_LEN + TUD_CDC_DESC_LEN + TUD_MSC_DESC_LEN)
@@ -70,18 +70,19 @@
 #define USBD_CDC_IN_OUT_MAX_SIZE (64)
 #define USBD_MSC_IN_OUT_MAX_SIZE (64)
 
-#define USBD_CDC_STDIO_EP_CMD 	(0x81)
-#define USBD_CDC_UART0_EP_CMD   (0x82)
-#define USBD_CDC_UART1_EP_CMD   (0x83)
-#define USBD_CDC_STDIO_EP_OUT	(0x02)
-#define USBD_CDC_UART0_EP_OUT   (0x03)
-#define USBD_CDC_UART1_EP_OUT   (0x04)
-#define USBD_CDC_STDIO_EP_IN	(0x84)
-#define USBD_CDC_UART0_EP_IN    (0x85)
+#define USBD_CDC_STDIO_EP_CMD   (0x81) //EP_CMD and EP_IN are all IN endpoints
+#define USBD_CDC_STDIO_EP_IN    (0x82)
+#define USBD_CDC_UART0_EP_CMD   (0x83)
+#define USBD_CDC_UART0_EP_IN    (0x84)
+#define USBD_CDC_UART1_EP_CMD   (0x85)
 #define USBD_CDC_UART1_EP_IN    (0x86)
+#define USBD_MSC_EP_IN          (0x87)
 
-#define USBD_MSC_EP_OUT		(0x05)
-#define USBD_MSC_EP_IN		(0x87)
+
+#define USBD_CDC_STDIO_EP_OUT	(0x02) // STDIO UART
+#define USBD_CDC_UART0_EP_OUT   (0x04) // UART0 Bridge
+#define USBD_CDC_UART1_EP_OUT   (0x06) // UART1 Bridge
+#define USBD_MSC_EP_OUT         (0x07) // USB Mass Storage
 
 #define USBD_STR_0		(0x00)
 #define USBD_STR_MANUF		(0x01)
