@@ -53,7 +53,12 @@
 #include "unique_id_modified.h"
 //#include "pico/unique_id.h" // We use our modified unique_id library because the standard one includes hardware/flash.h
 #include "tumt_usb_config.h"
+#include "pico/multicore.h"
+#include "pico/time.h"
+#include "tinyusb_multitool.h"
 
+void __no_inline_not_in_flash_func(flash_erase_and_move_core1_entry)();
+int64_t __no_inline_not_in_flash_func(flash_erase_and_move)(void *user_data);
 
 
 // Note: descriptors returned from callbacks must exist long enough for transfer to complete
@@ -550,10 +555,7 @@ int32_t __no_inline_not_in_flash_func(tud_msc_read10_cb)(uint8_t lun, uint32_t l
 	return bufsize;
 }
 
-void __no_inline_not_in_flash_func(tumt_periodic_task)(void);
-int64_t __no_inline_not_in_flash_func(flash_erase_and_move)(alarm_id_t id, void *user_data);
-//int64_t __no_inline_not_in_flash_func(flash_erase_and_move)(/*alarm_id_t id, void *user_data){ */uint32_t flash1_start, uint32_t flash2_start, uint32_t flash2_len);
-
+void tumt_periodic_task();
 
 
 // Callback invoked when received WRITE10 command.
@@ -586,8 +588,8 @@ int32_t __no_inline_not_in_flash_func(tud_msc_write10_cb)(uint8_t lun, uint32_t 
 					arguments[0] = 0x0;
 					arguments[1] = 0x0+FLASH_OFFSET;
 					arguments[2] = ((uf2->target_addr - XIP_MAIN_BASE)+uf2->payload_size);
-					bool rc = add_alarm_in_ms(100, flash_erase_and_move,  arguments, true);
-					//flash_erase_and_move(arguments[0], arguments[1], arguments[2]);
+					//bool rc = add_alarm_in_ms(100, flash_erase_and_move,  arguments, true);
+					flash_erase_and_move(arguments);
 				} 
 				return bufsize;
 
@@ -625,11 +627,23 @@ uint32_t * __no_inline_not_in_flash_func(__memcpy_ram)(uint8_t * address_to, con
 
 uint32_t * __no_inline_not_in_flash_func(__memset_ram)(uint8_t * address, uint8_t value, uint32_t length){
 	rom_memset_fn rom_memset = (rom_memset_fn)rom_func_lookup_inline(ROM_FUNC_MEMSET);
-	assert(memset_fn);
+	assert(rom_memset);
 	rom_memset(address, value, length);
 }
 
-int64_t __no_inline_not_in_flash_func(flash_erase_and_move)(alarm_id_t id, void *user_data){ //uint32_t flash1_start, uint32_t flash2_start, uint32_t flash2_len){
+int64_t __no_inline_not_in_flash_func(flash_erase_and_move)(void *user_data){
+	multicore_reset_core1();
+	multicore_launch_core1(flash_erase_and_move_core1_entry);
+	multicore_fifo_push_blocking((uint32_t)user_data);
+	return 0;
+}
+
+void __no_inline_not_in_flash_func(flash_erase_and_move_core1_entry)(){
+	uint32_t *user_data = (uint32_t *) multicore_fifo_pop_blocking();
+	multicore_lockout_start_timeout_us(10*1000*1000); 
+	uint32_t save = save_and_disable_interrupts();
+	busy_wait_ms(1000);
+
 	uint32_t * user_data2 = (uint32_t *) user_data;
 
 	uint32_t flash1_start = user_data2[0];
