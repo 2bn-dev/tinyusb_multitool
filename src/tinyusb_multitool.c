@@ -1,9 +1,5 @@
 
-
-#define TUMT_UART_USB_DEFAULT_CRLF 1
-#define TUMT_UART_USB_STDOUT_TIMEOUT_US 500000
-#define TUMT_UART_USB_TASK_INTERVAL_US 10000
-#define TUMT_UART_USB_LOW_PRIORITY_IRQ 31
+#define PICO_STDOUT_MUTEX 0 // STDOUT mutex causes deadlock with USB mutex during flash writes or anywhere that printf can happen within mutex from both cores.
 
 #include "tusb.h"
 #include "tinyusb_multitool.h"
