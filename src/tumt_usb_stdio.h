@@ -15,7 +15,7 @@
 
 struct {
 	int length;
-	char * buf[TUMT_STDIO_MAX_STR_LEN+1];
+	char * buf;
 } typedef tumt_stdio_data_out_t;
 
 bool tumt_usb_stdio_init();

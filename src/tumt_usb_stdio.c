@@ -24,6 +24,8 @@ static uint32_t tumt_stdio_data_in_write = 0;
 static void __no_inline_not_in_flash_func(tumt_stdio_out_chars)(const char *buf, int length) {
 	if(!tumt_usb_stdio_connected()) 
 		return;
+
+	uint32_t i = 0;
 	while(length > 0){
 		//length = TUMT_STDIO_MAX_STR_LEN;
 
@@ -40,8 +42,9 @@ static void __no_inline_not_in_flash_func(tumt_stdio_out_chars)(const char *buf,
 
 		if(length > TUMT_STDIO_MAX_STR_LEN){
 			stdio_data->length = TUMT_STDIO_MAX_STR_LEN;
-			memcpy(stdio_data->buf, buf, TUMT_STDIO_MAX_STR_LEN);
+			memcpy(stdio_data->buf+(i*TUMT_STDIO_MAX_STR_LEN), buf, TUMT_STDIO_MAX_STR_LEN);
 			length -= TUMT_STDIO_MAX_STR_LEN;
+			i++;
 		}else{
 			stdio_data->length = length;
 			memcpy(stdio_data->buf, buf, length);
@@ -143,7 +146,9 @@ stdio_driver_t tumt_stdio_usb = {
 bool tumt_usb_stdio_init() {
 	for(uint8_t i = 0; i < TUMT_STDIO_QUEUE_LENGTH; i++){
 		tumt_stdio_data_out[i] = malloc(sizeof(tumt_stdio_data_out_t)+1);
+		tumt_stdio_data_out[i]->buf = malloc(TUMT_STDIO_MAX_STR_LEN*sizeof(char));
 		tumt_stdio_data_in[i] = malloc(sizeof(tumt_stdio_data_out_t)+1);
+		tumt_stdio_data_in[i]->buf = malloc(TUMT_STDIO_MAX_STR_LEN*sizeof(char));
 	}
 
 	mutex_init(&tumt_stdio_out_mutex);
