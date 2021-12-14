@@ -18,22 +18,10 @@
 #define TUMT_UART_USB_TASK_INTERVAL_US 1000 // currently unused
 #define TUMT_UART_USB_LOW_PRIORITY_IRQ 31
 
-struct {
-	int length;
-	char * buf[TUMT_STDIO_MAX_STR_LEN+1];
-} typedef tumt_stdio_data_out_t;
-
-bool tumt_uart_usb_connected(void);
+mutex_t *tumt_get_usb_mutex(void);
 void tumt_periodic_task(void);
 bool tumt_usb_init(void (*_flash_pending_cb)(void));
-mutex_t tumt_get_usb_mutex(void);
-bool tumt_usb_stdio_connected(void);
+
 bool tumt_usb_uart0_connected(void);
 bool tumt_usb_uart1_connected(void);
-
-
-static void __no_inline_not_in_flash_func(tumt_stdio_out_chars)(const char *buf, int length);
-void __no_inline_not_in_flash_func(tumt_stdio_usb_out_chars)();
-static int __no_inline_not_in_flash_func(tumt_stdio_in_chars)(char *buf, int length);
-int __no_inline_not_in_flash_func(tumt_stdio_usb_in_chars)();
 #endif

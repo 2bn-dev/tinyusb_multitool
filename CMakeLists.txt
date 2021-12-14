@@ -25,6 +25,8 @@ if (PICO_SDK_PATH)
 		${CMAKE_CURRENT_LIST_DIR}/src/tinyusb_multitool.h
 		${CMAKE_CURRENT_LIST_DIR}/src/tumt_usb_config.c
 		${CMAKE_CURRENT_LIST_DIR}/src/tumt_usb_config.h
+		${CMAKE_CURRENT_LIST_DIR}/src/tumt_usb_stdio.c
+		${CMAKE_CURRENT_LIST_DIR}/src/tumt_usb_stdio.h
 		${CMAKE_CURRENT_LIST_DIR}/src/tumt_debug.h
 		${CMAKE_CURRENT_LIST_DIR}/src/tumt_uart_bridge.c
 		${CMAKE_CURRENT_LIST_DIR}/src/tumt_uart_bridge.h
