@@ -28,8 +28,13 @@ static void __no_inline_not_in_flash_func(tumt_stdio_out_chars)(const char *buf,
 		//length = TUMT_STDIO_MAX_STR_LEN;
 
 		tumt_stdio_data_out_t *stdio_data;
+		uint32_t owner;
+		if(!mutex_try_enter(&tumt_stdio_out_mutex, &owner)){
+			if (&owner != NULL && owner == get_core_num()) return; // would deadlock otherwise
+			mutex_enter_blocking(&tumt_stdio_out_mutex);
+		}
 
-		mutex_enter_blocking(&tumt_stdio_out_mutex);
+
 		stdio_data = tumt_stdio_data_out[(tumt_stdio_data_out_write++)%TUMT_STDIO_QUEUE_LENGTH];
 		mutex_exit(&tumt_stdio_out_mutex);
 
@@ -57,10 +62,19 @@ void __no_inline_not_in_flash_func(tumt_stdio_usb_out_chars)(){
 	}
 
 	tumt_stdio_data_out_t *stdio_data;
+
 	while(tumt_stdio_data_out_read < tumt_stdio_data_out_write){
-		mutex_enter_blocking(&tumt_stdio_out_mutex);
+		if(!mutex_try_enter(&tumt_stdio_out_mutex, &owner)){
+			if (&owner != NULL && owner == get_core_num()){
+				mutex_exit(tumt_get_usb_mutex());
+				return; // would deadlock otherwise
+			}
+			mutex_enter_blocking(&tumt_stdio_out_mutex);
+		}
+
 		stdio_data = tumt_stdio_data_out[(tumt_stdio_data_out_read++)%TUMT_STDIO_QUEUE_LENGTH];
 		mutex_exit(&tumt_stdio_out_mutex);
+
 		if (tud_cdc_n_connected(CDCD_ITF_STDIO)) {
 			for (int i = 0; i < stdio_data->length;) {
 				int n = stdio_data->length - i;
