@@ -639,23 +639,21 @@ int64_t __no_inline_not_in_flash_func(flash_erase_and_move)(void *user_data){
 
 void __no_inline_not_in_flash_func(flash_erase_and_move_core1_entry)(){
 	uint32_t *user_data = (uint32_t *) multicore_fifo_pop_blocking();
-	multicore_lockout_start_timeout_us(10*1000*1000); 
-	uint32_t save = save_and_disable_interrupts();
-	busy_wait_ms(1000);
-
 	uint32_t * user_data2 = (uint32_t *) user_data;
-
 	uint32_t flash1_start = user_data2[0];
-	uint32_t flash2_start = user_data2[1];
-	uint32_t flash2_len = user_data2[2];
+        uint32_t flash2_start = user_data2[1];
+        uint32_t flash2_len = user_data2[2];
 	free(user_data);
-	
-	uint8_t buf[4096];
-
-
 
 	_DBG("user_data: %lu, %lu, %lu", flash1_start, flash2_start, flash2_len);
 	_DBG("No further logging beyond this point, flash rewrite beginning, if successful device will reboot");
+	_DBG("-----------------------------------------------------------------------------------------------");
+	multicore_lockout_start_timeout_us(10*1000*1000); 
+	uint32_t save = save_and_disable_interrupts();
+	busy_wait_ms(1000);
+	
+	uint8_t buf[4096];
+
 
 	//Logging is not possible, because we're rewriting flash, and the memory addresses of functions and strings will be erased and replaced.
 	//I've tried a few ways to work around this, and I think basically the only way would be to have a ram only image that gets loaded to handle this process.
