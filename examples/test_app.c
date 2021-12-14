@@ -33,11 +33,14 @@ bool until(absolute_time_t timestamp){
 }
 
 
+void flash_pending_cb(){
+	return;
+}
 
 int main(){
 	//stdio_uart_init();
 	//Disable stdio UART, uart0 is used as bridge below, stdio is available on usb serial port via tumt_usb_init()
-	tumt_usb_init();
+	tumt_usb_init(flash_pending_cb);
 	tumt_uart_bridge_uart0_init(115200);
 	tumt_uart_bridge_uart1_init(921600);
 	tumt_uart_bridge_pin_init();
