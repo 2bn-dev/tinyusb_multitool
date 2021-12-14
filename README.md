@@ -25,6 +25,7 @@ The goal is to have a more extensible interface for both USB storage (msc) and U
 - [ ] USB Mass storage READ flash file
 - [ ] USB Mass storage more runtime info
 - [ ] USB Mass storage README.txt
+- [ ] USB Mass storage - Add custom files / file handler
 - [ ] USB Mass storage -> ESP32 webserver dynamic IP load
 - [ ] RP2040 Stage 2.5/3 bootloader for Flash partition failover (OTA1/OTA2/FALLBACK) if OTA1 = active flash OTA2 boot OTA2 if fail boot OTA1, if fail boot FALLBACK (fallback can't be OTA flashed).
 - [ ] Flash file system direct USB mass storage read/write?
