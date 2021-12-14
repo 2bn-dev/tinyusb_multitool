@@ -50,6 +50,7 @@ if (PICO_SDK_PATH)
 		tinyusb_device
 		pico_util
 		boot_uf2_headers
+		pico_multicore
 		)
 
 	return()
