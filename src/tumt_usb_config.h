@@ -173,7 +173,7 @@ static struct uf2_info {
 #define INFO_UF2_TXT 		"TinyUSB Multitool UF2 loader v1.0\r\nModel: " INFO_UF2_TXT_MODEL "\r\nBoard-ID: " INFO_UF2_TXT_BOARD_ID  "\r\n"
 #define INFO_UF2_TXT_LEN 	strlen(INFO_UF2_TXT)
 
-#define README_TXT		"2bn 16x16 LED Matrix MCU Flash Interface\r\n----------------------------------------\r\n\r\nThis virtual USB thumb drive can be used to flash a new firmware onto your\r\n2bn 16x16 LED Matrix. It will only show up while your device is plugged into USB.\r\nAll you need to do is drag and drop a new firmware into this drive\r\n\r\nWARNING: This flash interface is created WITHIN the original software provided\r\nwith your device, if you flash a custom firmware that does not include the tinyusb_multitool library\r\nthe flash interface will no longer exist.\r\n"
+#define README_TXT		"TinyUSB MCU Flash Interface\r\n----------------------------------------\r\n\r\nThis virtual USB thumb drive can be used to flash a new firmware onto your\r\ndevice.\r\n"
 #define README_TXT_LEN		strlen(README_TXT)
 
 
