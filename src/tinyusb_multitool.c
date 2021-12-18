@@ -1,6 +1,3 @@
-
-#define PICO_STDOUT_MUTEX 0 // STDOUT mutex causes deadlock with USB mutex during flash writes or anywhere that printf can happen within mutex from both cores.
-
 #include "tusb.h"
 #include "tinyusb_multitool.h"
 #include "pico/mutex.h"
@@ -28,7 +25,6 @@ mutex_t * tumt_get_usb_mutex(){
 
 void __no_inline_not_in_flash_func(tumt_periodic_task)(void) {
 	//Non-blocking mutex, if it's already owned we'll hit it next time around.
-	uint32_t interrupts = save_and_disable_interrupts();
 	
 	if (mutex_try_enter(&tumt_usb_mutex, NULL)){
 		tud_task();
@@ -45,8 +41,6 @@ void __no_inline_not_in_flash_func(tumt_periodic_task)(void) {
 	if(tumt_usb_uart1_connected())
 		tumt_uart_bridge_uart1_in_out(&tumt_usb_mutex);
 	
-
-	restore_interrupts(interrupts);
 }
 
 static int64_t __no_inline_not_in_flash_func(timer_task)(__unused alarm_id_t id, __unused void *user_data) {

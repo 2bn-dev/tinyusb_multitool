@@ -5,13 +5,10 @@
 
 #ifndef TINYUSB_MULTITOOL_H
 #define TINYUSB_MULTITOOL_H
+
 #include "tusb.h"
 #include "tumt_debug.h"
 #include "tumt_uart_bridge.h"
-
-
-#define TUMT_STDIO_MAX_STR_LEN 128
-#define TUMT_STDIO_QUEUE_LENGTH 64
 
 #define TUMT_UART_USB_DEFAULT_CRLF 1
 #define TUMT_UART_USB_STDOUT_TIMEOUT_US 500000 // 500 ms - Disabled

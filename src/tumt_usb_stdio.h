@@ -9,7 +9,7 @@
 #include "tumt_debug.h"
 
 #define TUMT_STDIO_MAX_STR_LEN 128
-#define TUMT_STDIO_QUEUE_LENGTH 64
+#define TUMT_STDIO_QUEUE_LENGTH 32
 
 #define TUMT_UART_USB_STDOUT_TIMEOUT_US 500000 // 500 ms - Disabled
 

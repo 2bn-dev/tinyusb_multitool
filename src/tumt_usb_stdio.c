@@ -1,20 +1,20 @@
-
-#define PICO_STDOUT_MUTEX 0 // STDOUT mutex causes deadlock with USB mutex during flash writes or anywhere that printf can happen within mutex from both cores.
-
 #include "tusb.h"
 #include "tinyusb_multitool.h"
 #include "pico/mutex.h"
+#include "pico/stdio.h"
 #include "pico/stdio/driver.h"
 #include "tumt_usb_config.h"
 #include "tumt_usb_stdio.h"
 #include <stdlib.h>
 
-static mutex_t tumt_stdio_out_mutex;
+//static mutex_t tumt_stdio_out_mutex;
+critical_section_t tumt_stdio_out_critical_section;
 static tumt_stdio_data_out_t *tumt_stdio_data_out[TUMT_STDIO_QUEUE_LENGTH];
 static uint32_t tumt_stdio_data_out_read = 0;
 static uint32_t tumt_stdio_data_out_write = 0;
 
-static mutex_t tumt_stdio_in_mutex;
+//static mutex_t tumt_stdio_in_mutex;
+critical_section_t tumt_stdio_in_critical_section;
 static tumt_stdio_data_out_t *tumt_stdio_data_in[TUMT_STDIO_QUEUE_LENGTH];
 static uint32_t tumt_stdio_data_in_read = 0;
 static uint32_t tumt_stdio_data_in_write = 0;
@@ -26,19 +26,19 @@ static void __no_inline_not_in_flash_func(tumt_stdio_out_chars)(const char *buf,
 		return;
 
 	uint32_t i = 0;
+	critical_section_enter_blocking(&tumt_stdio_out_critical_section);
 	while(length > 0){
 		//length = TUMT_STDIO_MAX_STR_LEN;
 
 		tumt_stdio_data_out_t *stdio_data;
 		uint32_t owner;
-		if(!mutex_try_enter(&tumt_stdio_out_mutex, &owner)){
-			if (&owner != NULL && owner == get_core_num()) return; // would deadlock otherwise
-			mutex_enter_blocking(&tumt_stdio_out_mutex);
-		}
-
+		//if(!mutex_try_enter(&tumt_stdio_out_mutex, &owner)){
+		//	if (&owner != NULL && owner == get_core_num()) return; // would deadlock otherwise
+		//	mutex_enter_blocking(&tumt_stdio_out_mutex);
+		//}
 
 		stdio_data = tumt_stdio_data_out[(tumt_stdio_data_out_write++)%TUMT_STDIO_QUEUE_LENGTH];
-		mutex_exit(&tumt_stdio_out_mutex);
+		//mutex_exit(&tumt_stdio_out_mutex);
 
 		if(length > TUMT_STDIO_MAX_STR_LEN){
 			stdio_data->length = TUMT_STDIO_MAX_STR_LEN;
@@ -52,6 +52,7 @@ static void __no_inline_not_in_flash_func(tumt_stdio_out_chars)(const char *buf,
 		}
 	}
 
+	critical_section_exit(&tumt_stdio_out_critical_section);
 	return;
 }
 
@@ -66,17 +67,18 @@ void __no_inline_not_in_flash_func(tumt_stdio_usb_out_chars)(){
 
 	tumt_stdio_data_out_t *stdio_data;
 
+	critical_section_enter_blocking(&tumt_stdio_out_critical_section);
 	while(tumt_stdio_data_out_read < tumt_stdio_data_out_write){
-		if(!mutex_try_enter(&tumt_stdio_out_mutex, &owner)){
-			if (&owner != NULL && owner == get_core_num()){
-				mutex_exit(tumt_get_usb_mutex());
-				return; // would deadlock otherwise
-			}
-			mutex_enter_blocking(&tumt_stdio_out_mutex);
-		}
+		//if(!mutex_try_enter(&tumt_stdio_out_mutex, &owner)){
+		//	if (&owner != NULL && owner == get_core_num()){
+		//		mutex_exit(tumt_get_usb_mutex());
+		//		return; // would deadlock otherwise
+		//	}
+		//	mutex_enter_blocking(&tumt_stdio_out_mutex);
+		//}
 
 		stdio_data = tumt_stdio_data_out[(tumt_stdio_data_out_read++)%TUMT_STDIO_QUEUE_LENGTH];
-		mutex_exit(&tumt_stdio_out_mutex);
+		//mutex_exit(&tumt_stdio_out_mutex);
 
 		if (tud_cdc_n_connected(CDCD_ITF_STDIO)) {
 			for (int i = 0; i < stdio_data->length;) {
@@ -106,7 +108,7 @@ void __no_inline_not_in_flash_func(tumt_stdio_usb_out_chars)(){
 		}
 		//free(stdio_data); // Where we used to free memory, implementation now uses shared stdio_data array that exists forever to avoid mutex in malloc
 	}
-
+	critical_section_exit(&tumt_stdio_out_critical_section);
 	mutex_exit(tumt_get_usb_mutex());
 }
 
@@ -151,8 +153,11 @@ bool tumt_usb_stdio_init() {
 		tumt_stdio_data_in[i]->buf = malloc(TUMT_STDIO_MAX_STR_LEN*sizeof(char));
 	}
 
-	mutex_init(&tumt_stdio_out_mutex);
-	mutex_init(&tumt_stdio_in_mutex);
+	//mutex_init(&tumt_stdio_out_mutex);
+	//mutex_init(&tumt_stdio_in_mutex);
+	critical_section_init(&tumt_stdio_out_critical_section);
+	critical_section_init(&tumt_stdio_in_critical_section);
+	
 
 	stdio_set_driver_enabled(&tumt_stdio_usb, true);
 
