@@ -53,6 +53,7 @@ if (PICO_SDK_PATH)
 		pico_multicore
 		)
 
+	add_compile_definitions(PICO_STDOUT_MUTEX=0)
 	return()
 elseif(BUILD_DOC)
 	# check if Doxygen is installed
