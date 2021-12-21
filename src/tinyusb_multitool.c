@@ -26,21 +26,19 @@ mutex_t * tumt_get_usb_mutex(){
 void __no_inline_not_in_flash_func(tumt_periodic_task)(void) {
 	//Non-blocking mutex, if it's already owned we'll hit it next time around.
 	
-	if (mutex_try_enter(&tumt_usb_mutex, NULL)){
+	if(mutex_try_enter(&tumt_usb_mutex, NULL)){
 		tud_task();
-	        mutex_exit(&tumt_usb_mutex);
-	}
 
 	if(tumt_usb_stdio_connected())
 		tumt_stdio_usb_out_chars();
-	
-
 	if(tumt_usb_uart0_connected())
 		tumt_uart_bridge_uart0_in_out(&tumt_usb_mutex);
 	
 	if(tumt_usb_uart1_connected())
 		tumt_uart_bridge_uart1_in_out(&tumt_usb_mutex);
-	
+
+		mutex_exit(&tumt_usb_mutex);
+	}
 }
 
 static int64_t __no_inline_not_in_flash_func(timer_task)(__unused alarm_id_t id, __unused void *user_data) {

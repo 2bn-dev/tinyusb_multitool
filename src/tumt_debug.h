@@ -17,7 +17,7 @@ void get_absolute_time() return 0;
 #ifndef NDEBUG
 #ifndef _DBG
 #define _DBG(fmt, ...) \
-	do{ fprintf(stdout, "%llu [%s:%d](%s) - " fmt "\n", \
+	do{ fprintf(stdout, "%llu [%s:%d](%s) - " fmt "\r\n", \
 		get_absolute_time(), __FILE__, __LINE__, __func__, ##__VA_ARGS__); } while(0)
 #endif
 #else

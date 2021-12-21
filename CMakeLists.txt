@@ -18,6 +18,21 @@ add_custom_command(OUTPUT ${GIT_INFO_H}
         )
 
 if (PICO_SDK_PATH)
+	add_library(esp-serial-flasher INTERFACE)
+
+	target_sources(esp-serial-flasher INTERFACE
+		${CMAKE_CURRENT_LIST_DIR}/lib/esp-serial-flasher/src/esp_loader.c
+		${CMAKE_CURRENT_LIST_DIR}/lib/esp-serial-flasher/src/esp_targets.c
+		${CMAKE_CURRENT_LIST_DIR}/lib/esp-serial-flasher/src/serial_comm.c
+		${CMAKE_CURRENT_LIST_DIR}/lib/esp-serial-flasher/src/md5_hash.c
+	)
+
+	target_include_directories(esp-serial-flasher INTERFACE 
+		${CMAKE_CURRENT_LIST_DIR}/lib/esp-serial-flasher/include 
+		${CMAKE_CURRENT_LIST_DIR}/lib/esp-serial-flasher/port 
+		${CMAKE_CURRENT_LIST_DIR}/lib/esp-serial-flasher/private_include
+	)
+
 	add_library(tinyusb_multitool INTERFACE)
 
 	target_sources(tinyusb_multitool INTERFACE
@@ -30,6 +45,8 @@ if (PICO_SDK_PATH)
 		${CMAKE_CURRENT_LIST_DIR}/src/tumt_debug.h
 		${CMAKE_CURRENT_LIST_DIR}/src/tumt_uart_bridge.c
 		${CMAKE_CURRENT_LIST_DIR}/src/tumt_uart_bridge.h
+		${CMAKE_CURRENT_LIST_DIR}/src/tumt_flash_esp32.c
+		${CMAKE_CURRENT_LIST_DIR}/src/tumt_flash_esp32.h
 		${CMAKE_CURRENT_LIST_DIR}/src/flash.c
 		${CMAKE_CURRENT_LIST_DIR}/src/flash.h
 		${CMAKE_CURRENT_LIST_DIR}/src/unique_id_modified.h
@@ -40,8 +57,16 @@ if (PICO_SDK_PATH)
 		)
 	target_include_directories( tinyusb_multitool INTERFACE
 		${CMAKE_CURRENT_LIST_DIR}/src
-		)
-	add_dependencies(tinyusb_multitool update_git_info)
+		${CMAKE_CURRENT_LIST_DIR}/lib/esp-serial-flasher/include
+	)
+
+	add_dependencies(tinyusb_multitool 
+		update_git_info
+	)
+
+	target_link_libraries(
+		esp-serial-flasher INTERFACE
+	)
 
 	target_link_libraries(
 		tinyusb_multitool INTERFACE
@@ -51,9 +76,11 @@ if (PICO_SDK_PATH)
 		pico_util
 		boot_uf2_headers
 		pico_multicore
-		)
+		esp-serial-flasher
+	)
 
 	add_compile_definitions(PICO_STDOUT_MUTEX=0)
+
 	return()
 elseif(BUILD_DOC)
 	# check if Doxygen is installed

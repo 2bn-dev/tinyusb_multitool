@@ -56,6 +56,11 @@
 #include "pico/time.h"
 #include "tinyusb_multitool.h"
 
+#define ESP32_FAMILY_ID 0x1c5f21b0
+#define ESP32_PAYLOAD_LENGTH 452
+
+
+
 void __no_inline_not_in_flash_func(flash_erase_and_move_core1_entry)();
 int64_t __no_inline_not_in_flash_func(flash_erase_and_move)(void *user_data);
 
@@ -371,7 +376,6 @@ void reset_task(struct async_task *task) {
 }
 static bool __no_inline_not_in_flash_func(_update_current_uf2_info)(struct uf2_block *uf2) {
 	bool ram = is_address_ram(uf2->target_addr) && is_address_ram(uf2->target_addr + (FLASH_PAGE_MASK));
-
 	bool flash = is_address_flash(uf2->target_addr) && is_address_flash(uf2->target_addr + (FLASH_PAGE_MASK));
 
 	if (!(uf2->num_blocks && (ram || flash)) || (flash && (uf2->target_addr & (FLASH_PAGE_MASK)))) {
@@ -386,7 +390,7 @@ static bool __no_inline_not_in_flash_func(_update_current_uf2_info)(struct uf2_b
 			_uf2_info.ram = ram;
 			_uf2_info.valid_blocks = ram ? uf2_valid_ram_blocks : (uint32_t *) FLASH_VALID_BLOCKS_BASE;
 			_uf2_info.max_valid_blocks = ram ? count_of(uf2_valid_ram_blocks) * 32 : FLASH_MAX_VALID_BLOCKS;
-			_DBG("  ram %d, so valid_blocks (max %d) %p->%p for %dK\n", ram, (int) _uf2_info.max_valid_blocks, _uf2_info.valid_blocks, _uf2_info.valid_blocks + ((_uf2_info.max_valid_blocks + 31) / 32), (uint) _uf2_info.max_valid_blocks / 4);
+			_DBG("  ram %d, so valid_blocks (max %d) %p->%p for %dK", ram, (int) _uf2_info.max_valid_blocks, _uf2_info.valid_blocks, _uf2_info.valid_blocks + ((_uf2_info.max_valid_blocks + 31) / 32), (uint) _uf2_info.max_valid_blocks / 4);
 
 			//_clear_bitset(_uf2_info.valid_blocks, _uf2_info.max_valid_blocks);
 			_DBG(" post _clear_bitset()");
@@ -402,20 +406,20 @@ static bool __no_inline_not_in_flash_func(_update_current_uf2_info)(struct uf2_b
 				_DBG("Oops image requires %d blocks and won't fit", (uint) uf2->num_blocks);
 				return false;
 			}
-			_DBG("New UF2 transfer\n");
+			_DBG("New UF2 transfer");
 			_uf2_info.num_blocks = uf2->num_blocks;
 			_uf2_info.valid_block_count = 0;
 			_uf2_info.lowest_addr = 0xffffffff;
 		}
 
 		if (ram != _uf2_info.ram) {
-			_DBG("Ignoring write to out of range address 0x%08x->0x%08x\n", (uint) uf2->target_addr, (uint) (uf2->target_addr + uf2->payload_size));
+			_DBG("Ignoring write to out of range address 0x%08x->0x%08x", (uint) uf2->target_addr, (uint) (uf2->target_addr + uf2->payload_size));
 	        } else {
 			assert(uf2->num_blocks <= _uf2_info.max_valid_blocks);
 			if (uf2->block_no <= uf2->num_blocks) {
 				return true;
 			} else {
-				_DBG("Ignoring write to out of range block %d >= %d\n", (int) uf2->block_no, (int) uf2->num_blocks);
+				_DBG("Ignoring write to out of range block %d >= %d", (int) uf2->block_no, (int) uf2->num_blocks);
 			}
 		}
 	}
@@ -593,6 +597,24 @@ int32_t __no_inline_not_in_flash_func(tud_msc_write10_cb)(uint8_t lun, uint32_t 
 				return bufsize;
 
 			}
+		}else if (uf2->flags & UF2_FLAG_FAMILY_ID_PRESENT && uf2->file_size == ESP32_FAMILY_ID && uf2->payload_size == ESP32_PAYLOAD_LENGTH) {
+			_DBG("Sector %d: ESP32 Valid flash - magic0 %x, magic1 %x, flags %x, target_addr %x  payload_size %d, block_no %d, num_blocks %d, file_size %x, magic_end %x", (uint) lba, 
+					uf2->magic_start0,
+				       	uf2->magic_start1,
+					uf2->flags,
+					uf2->target_addr,
+					uf2->payload_size,
+					uf2->block_no,
+					uf2->num_blocks,
+					uf2->file_size,
+					uf2->magic_end
+			);
+			if(uf2->block_no == 0){
+				esp32_start_flash();
+
+			}
+
+
 		} else {
 			_DBG("Sector %d: ignoring write of non Mu UF2 sector\n", (uint) lba);
 		}
@@ -612,7 +634,7 @@ int32_t __no_inline_not_in_flash_func(tud_msc_write10_cb)(uint8_t lun, uint32_t 
 		 *     uint32_t magic_end;
 		 *    };
 		 */
-		_DBG("Sector %d: ignoring write of non UF2 sector [0x%02x, 0x%02x, 0x%02x, 0x%02x, %d, %d, %d, %d, 0x%02x]\n", (uint) lba, uf2->magic_start0, uf2->magic_start1, uf2->flags, uf2->target_addr, uf2->payload_size, uf2->block_no, uf2->num_blocks, uf2->file_size, uf2->magic_end);
+		_DBG("Sector %d: ignoring write of non UF2 sector [0x%02x, 0x%02x, 0x%02x, 0x%02x, %d, %d, %d, %d, 0x%02x]", (uint) lba, uf2->magic_start0, uf2->magic_start1, uf2->flags, uf2->target_addr, uf2->payload_size, uf2->block_no, uf2->num_blocks, uf2->file_size, uf2->magic_end);
 	}
 
 	return bufsize;
@@ -644,13 +666,19 @@ void __no_inline_not_in_flash_func(flash_erase_and_move_core1_entry)(){
         uint32_t flash2_start = user_data2[1];
         uint32_t flash2_len = user_data2[2];
 	free(user_data);
-
+	fflush(stdout);
+	busy_wait_ms(500);
+	_DBG("-----------------------------------------------------------------------------------------------");
+	_DBG("");
 	_DBG("user_data: %lu, %lu, %lu", flash1_start, flash2_start, flash2_len);
 	_DBG("No further logging beyond this point, flash rewrite beginning, if successful device will reboot");
+	_DBG("");
 	_DBG("-----------------------------------------------------------------------------------------------");
+	fflush(stdout);
+	busy_wait_ms(100);
+
 	multicore_lockout_start_timeout_us(10*1000*1000); 
 	uint32_t save = save_and_disable_interrupts();
-	busy_wait_ms(1000);
 	
 	uint8_t buf[4096];
 

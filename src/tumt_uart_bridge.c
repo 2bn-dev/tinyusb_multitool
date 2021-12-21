@@ -20,12 +20,12 @@ const char ESP_SYNC[] = {
 
 uint32_t current_baud_rate_uart0 = 0;
 uint32_t current_baud_rate_uart1 = 0;
-
+/*
 static int64_t tumt_uart_bridge_uart0_timer(__unused alarm_id_t id, __unused void *user_data) {
         tumt_uart_bridge_uart0_in_out(tumt_get_usb_mutex());
         return TUMT_UART_BRIDGE_TASK_INTERVAL_US;
 }
-
+*/
 void tumt_uart_bridge_uart0_init(uint32_t baud_rate){
 	current_baud_rate_uart0 = uart_init(uart0, baud_rate);
 	uart_set_format(uart0, 8, 1, UART_PARITY_NONE);
@@ -33,11 +33,12 @@ void tumt_uart_bridge_uart0_init(uint32_t baud_rate){
 	//bool rc = add_alarm_in_us(TUMT_UART_BRIDGE_TASK_INTERVAL_US, tumt_uart_bridge_uart0_timer, NULL, true);
 }
 
-
+/*
 static int64_t tumt_uart_bridge_uart1_timer(__unused alarm_id_t id, __unused void *user_data) {
         tumt_uart_bridge_uart1_in_out(tumt_get_usb_mutex());
         return TUMT_UART_BRIDGE_TASK_INTERVAL_US;
 }
+*/
 void tumt_uart_bridge_uart1_init(uint32_t baud_rate){
 	current_baud_rate_uart1 = uart_init(uart1, baud_rate);
 	uart_set_format(uart1, 8, 1, UART_PARITY_NONE);
@@ -117,13 +118,13 @@ int tumt_uart_bridge_uart0_in_out(mutex_t *tumt_usb_mutex){
 	uint32_t owner;
 
 
-	if (!mutex_try_enter(tumt_usb_mutex, &owner)) {
+	/*if (!mutex_try_enter(tumt_usb_mutex, &owner)) {
 		if (owner == get_core_num()) return 0; // would deadlock otherwise
 		mutex_enter_blocking(tumt_usb_mutex);
-	}
+	}*/
 
 	if (!tud_cdc_n_connected(CDCD_ITF_UART0)) {
-		mutex_exit(tumt_usb_mutex);
+	//	mutex_exit(tumt_usb_mutex);
 		return 0;
 	}
 
@@ -188,7 +189,7 @@ int tumt_uart_bridge_uart0_in_out(mutex_t *tumt_usb_mutex){
 #endif
 	}
 
-	mutex_exit(tumt_usb_mutex);
+	//mutex_exit(tumt_usb_mutex);
 	return 0;
 }
 
@@ -202,13 +203,13 @@ bool match_found_uart1 = false;
 int tumt_uart_bridge_uart1_in_out(mutex_t *tumt_usb_mutex){
         static uint64_t last_avail_time;
         uint32_t owner;
-        if (!mutex_try_enter(tumt_usb_mutex, &owner)) {
+/*        if (!mutex_try_enter(tumt_usb_mutex, &owner)) {
                 if (owner == get_core_num()) return 0; // would deadlock otherwise
                 mutex_enter_blocking(tumt_usb_mutex);
-        }
+        }*/
 
         if (!tud_cdc_n_connected(CDCD_ITF_UART1)) {
-                mutex_exit(tumt_usb_mutex);
+        //        mutex_exit(tumt_usb_mutex);
                 return 0;
         }
 
@@ -272,7 +273,7 @@ int tumt_uart_bridge_uart1_in_out(mutex_t *tumt_usb_mutex){
 #endif
         }
 
-        mutex_exit(tumt_usb_mutex);
+        //mutex_exit(tumt_usb_mutex);
         return 0;
 }
 
