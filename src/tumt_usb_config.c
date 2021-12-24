@@ -54,12 +54,14 @@
 #include "tumt_usb_config.h"
 #include "pico/multicore.h"
 #include "pico/time.h"
+#include "pico/sync.h"
 #include "tinyusb_multitool.h"
-
-#define ESP32_FAMILY_ID 0x1c5f21b0
-#define ESP32_PAYLOAD_LENGTH 452
+#include "tumt_flash_esp32.h"
 
 
+critical_section_t critical_section_esp32;
+uint32_t write_callback_count = 0;
+uint32_t esp32_last_flash_write_count = 0;
 
 void __no_inline_not_in_flash_func(flash_erase_and_move_core1_entry)();
 int64_t __no_inline_not_in_flash_func(flash_erase_and_move)(void *user_data);
@@ -116,6 +118,7 @@ const uint8_t *tud_descriptor_device_cb(void) {
 
 const uint8_t *tud_descriptor_configuration_cb(uint8_t index) {
 	_DBG("tud_descriptor_configuration_cb(%d)", index);
+	//critical_section_init(&critical_section_esp32);
 	return usbd_desc_cfg;
 }
 
@@ -565,7 +568,13 @@ int32_t __no_inline_not_in_flash_func(tud_msc_read10_cb)(uint8_t lun, uint32_t l
 
 // Callback invoked when received WRITE10 command.
 // Process data in buffer to disk's storage and return number of written bytes
+static bool flash_started = false;
+uint8_t payload[1024];
+size_t payload_write_pointer = 0;
+uint32_t flash_source_address = 0;
+
 int32_t __no_inline_not_in_flash_func(tud_msc_write10_cb)(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t* buf, uint32_t bufsize){
+	write_callback_count++;
 	(void) lun;
 	struct uf2_block *uf2 = (struct uf2_block *) buf;
 	if (uf2->magic_start0 == UF2_MAGIC_START0 && uf2->magic_start1 == UF2_MAGIC_START1 && uf2->magic_end == UF2_MAGIC_END) {
@@ -597,26 +606,85 @@ int32_t __no_inline_not_in_flash_func(tud_msc_write10_cb)(uint8_t lun, uint32_t 
 				return bufsize;
 
 			}
-		}else if (uf2->flags & UF2_FLAG_FAMILY_ID_PRESENT && uf2->file_size == ESP32_FAMILY_ID && uf2->payload_size == ESP32_PAYLOAD_LENGTH) {
-			_DBG("Sector %d: ESP32 Valid flash - magic0 %x, magic1 %x, flags %x, target_addr %x  payload_size %d, block_no %d, num_blocks %d, file_size %x, magic_end %x", (uint) lba, 
-					uf2->magic_start0,
-				       	uf2->magic_start1,
-					uf2->flags,
-					uf2->target_addr,
-					uf2->payload_size,
-					uf2->block_no,
-					uf2->num_blocks,
-					uf2->file_size,
-					uf2->magic_end
-			);
-			if(uf2->block_no == 0){
+		}else if ((uf2->flags & UF2_FLAG_FAMILY_ID_PRESENT) && uf2->file_size == ESP32_FAMILY_ID && (uf2->payload_size == ESP32_PAYLOAD_LENGTH || uf2->num_blocks-uf2->block_no == 1)) {
+			//critical_section_enter_blocking(&critical_section_esp32);
+			//If family ID present, & family ID = ESP32, & payload_size = expected or last block.
+			//_DBG("Sector %d: ESP32 Valid flash - target 0x%x [0x%x] payload_size %d, (%d/%d)", (uint) lba, 
+			//		uf2->target_addr,
+			//		uf2->flags,
+			//		uf2->payload_size,
+			//		uf2->block_no,
+			//		uf2->num_blocks
+			//);
+			unsigned char *payload_ptr;
+			payload_ptr = &payload[0];
+
+			unsigned char *uf2_data_ptr;
+			uf2_data_ptr = &uf2->data[0];
+
+			if(uf2->block_no == 0 && !flash_started){
+				_DBG("ESP32 Flash START [0x%x addr, %d blocks]", uf2->target_addr, uf2->num_blocks);
 				esp32_start_flash();
+				flash_started = true;
 
 			}
 
+			if(uf2->block_no == 0){
+				_DBG("ESP32 Flash ERASE [0x%x, %d, %d]", uf2->target_addr, uf2->num_blocks*ESP32_PAYLOAD_LENGTH, ESP32_BLOCK_SIZE);
+				esp32_erase_flash(uf2->target_addr, uf2->num_blocks*ESP32_PAYLOAD_LENGTH, ESP32_BLOCK_SIZE);
+				flash_source_address = uf2->target_addr;
+				payload_write_pointer = 0;
+			}
 
+			//If we have < 1 payload worth of capacity in the buffer, write as much as we can, otherwise write a full payload
+			int32_t size_to_read = (ESP32_BLOCK_SIZE-payload_write_pointer < ESP32_PAYLOAD_LENGTH) ? ESP32_BLOCK_SIZE-payload_write_pointer : ESP32_PAYLOAD_LENGTH;
+
+			//If our actual payload size is < size_to_read for some reason (really should only happen on LAST block?), set read size to payload size.
+			size_to_read = (uf2->payload_size < size_to_read) ? uf2->payload_size : size_to_read;
+
+			//Read current UF2 data payload into payload buffer at write pointer
+			_DBG("ESP32 Flash payload load [0x%x, 0x%x, %d, %d]", (payload_ptr+payload_write_pointer), uf2_data_ptr, size_to_read, payload_write_pointer);
+			fflush(stdout);
+
+			memcpy(payload_ptr+payload_write_pointer, uf2_data_ptr, size_to_read);
+
+			payload_write_pointer += size_to_read;
+
+			if(payload_write_pointer >= ESP32_BLOCK_SIZE){
+				esp32_write_block(flash_source_address, payload_ptr, payload_write_pointer);
+				//_DBG("ESP32 write block [0x%x, (%d/%d), %d]", flash_source_address, uf2->block_no, uf2->num_blocks, payload_write_pointer);
+				fflush(stdout);
+
+				flash_source_address += payload_write_pointer;
+
+				payload_write_pointer = 0;
+
+
+
+				if(uf2->payload_size-size_to_read > 0){
+					//Load the payload buffer with the remainder of the last payload
+					// in this context, size_to_read is really size_of_previous_read.
+
+					memcpy(payload_ptr, uf2_data_ptr+(size_to_read), (uf2->payload_size-size_to_read));
+					_DBG("ESP32 Flash payload remainder load [0x%x, 0x%x, %d, %d]", payload_ptr, uf2_data_ptr+size_to_read, size_to_read, payload_write_pointer);
+					fflush(stdout);
+					payload_write_pointer += (uf2->payload_size-size_to_read);
+				}
+			}
+
+
+			if(uf2->num_blocks-uf2->block_no == 1){ //Final block
+				_DBG("ESP32 Flash write final block [0x%x, 0x%x, %d]", uf2->target_addr, payload_ptr, payload_write_pointer);
+
+				esp32_write_block(flash_source_address, payload_ptr, payload_write_pointer);
+			}
+			//critical_section_exit(&critical_section_esp32);
+			esp32_last_flash_write_count = write_callback_count;
+			fflush(stdout);
 		} else {
-			_DBG("Sector %d: ignoring write of non Mu UF2 sector\n", (uint) lba);
+			//_DBG("Sector %d: ignoring write of non Mu UF2 sector\n", (uint) lba);
+			_DBG("Sector %d: ignoring write of non Mu UF2 sector [0x%02x, 0x%02x, 0x%02x, 0x%02x, %d, %d, %d, 0x%x, 0x%02x]", 
+					(uint) lba, uf2->magic_start0, uf2->magic_start1, uf2->flags, uf2->target_addr, uf2->payload_size, uf2->block_no, uf2->num_blocks, uf2->file_size, uf2->magic_end);
 		}
 	} else {
 		/*
@@ -634,7 +702,29 @@ int32_t __no_inline_not_in_flash_func(tud_msc_write10_cb)(uint8_t lun, uint32_t 
 		 *     uint32_t magic_end;
 		 *    };
 		 */
-		_DBG("Sector %d: ignoring write of non UF2 sector [0x%02x, 0x%02x, 0x%02x, 0x%02x, %d, %d, %d, %d, 0x%02x]", (uint) lba, uf2->magic_start0, uf2->magic_start1, uf2->flags, uf2->target_addr, uf2->payload_size, uf2->block_no, uf2->num_blocks, uf2->file_size, uf2->magic_end);
+		_DBG("Sector %d: ignoring write of non UF2 sector [0x%02x, 0x%02x, 0x%02x, 0x%02x, %d, %d, %d, 0x%x, 0x%x]", 
+				(uint) lba, uf2->magic_start0, uf2->magic_start1, uf2->flags, uf2->target_addr, uf2->payload_size, uf2->block_no, uf2->num_blocks, uf2->file_size, uf2->magic_end);
+		if(esp32_last_flash_write_count != 0 && write_callback_count-esp32_last_flash_write_count > 8){ //Not the best way to "finish" the ESP32 flash, but...
+			printf("\n\n\n");
+			printf("--------------------------------------------------------------------\n\n");
+
+			esp_loader_error_t result;
+			result = esp32_verify_flash();
+			if(result == ESP_LOADER_SUCCESS){
+				printf("ESP32 Flash verify success!\n");
+			}else{
+				printf("ESP32 Flash verify FAIILED!\n");
+				printf("ESP_LOADER error: %s\n", result);
+			}
+			printf("\n\nReseting ESP32 out of flash mode\n");
+
+			loader_port_reset_target();
+
+			printf("\n--------------------------------------------------------------------\n\n");
+			esp32_last_flash_write_count = 0;
+			flash_started = false;
+			fflush(stdout);
+		}
 	}
 
 	return bufsize;

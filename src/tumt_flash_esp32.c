@@ -23,7 +23,7 @@ void loader_port_enter_bootloader(void){
 
 void loader_port_reset_target(void){
 	gpio_pull_up(pin_num_esp32_en);
-	loader_port_delay_ms(50);
+	loader_port_delay_ms(200);
 	gpio_pull_down(pin_num_esp32_en);
 }
 
@@ -132,7 +132,7 @@ void loader_port_pico_init(loader_pico_config_t *config){
 	pin_num_esp32_flash 	= config->pin_num_esp32_flash;
 	pin_num_esp32_en 	= config->pin_num_esp32_en;
 
-	uart_init(uart, 115200);
+	uart_init(uart, ESP32_INIT_BAUDRATE);
 	gpio_set_function(pin_num_uart_tx, GPIO_FUNC_UART);
 	gpio_set_function(pin_num_uart_rx, GPIO_FUNC_UART);
 }
@@ -172,56 +172,48 @@ esp_loader_error_t esp32_start_flash(){
 
 	loader_port_pico_init(&config);
 
-	return connect_to_target(0);
+	return connect_to_target(ESP32_HIGH_BAUDRATE);
 }
 
-esp_loader_error_t flash_binary(const uint8_t *bin, size_t size, size_t address){
+esp_loader_error_t esp32_erase_flash(size_t address, size_t size, size_t block_size){
 	esp_loader_error_t err;
-	static uint8_t payload[1024];
-	const uint8_t *bin_addr = bin;
 
 	printf("Erasing flash (this may take a while)...\n");
-	err = esp_loader_flash_start(address, size, sizeof(payload));
+	err = esp_loader_flash_start(address, size, block_size);
 	if (err != ESP_LOADER_SUCCESS) {
 		printf("Erasing flash failed with error %d.\n", err);
 		return err;
 	}
-	printf("Start programming\n");
 
-	size_t binary_size = size;
-	size_t written = 0;
+	return ESP_LOADER_SUCCESS;
+}
 
-	while (size > 0) {
-		size_t to_read = MIN(size, sizeof(payload));
-		memcpy(payload, bin_addr, to_read);
 
-		err = esp_loader_flash_write(payload, to_read);
-		if (err != ESP_LOADER_SUCCESS) {
-			printf("\nPacket could not be written! Error %d.\n", err);
-			return err;
-		}
+esp_loader_error_t esp32_write_block(size_t target_address, void *payload, size_t write_size){
+	esp_loader_error_t result;
 
-		size -= to_read;
-		bin_addr += to_read;
-		written += to_read;
-
-		int progress = (int)(((float)written / binary_size) * 100);
-		printf("\rProgress: %d %%", progress);
-		fflush(stdout);
-	};
-
-	printf("\nFinished programming\n");
-
-#if MD5_ENABLED
-	err = esp_loader_flash_verify();
-	if (err == ESP_LOADER_ERROR_UNSUPPORTED_FUNC) {
-		printf("ESP8266 does not support flash verify command.");
-		return err;
-	} else if (err != ESP_LOADER_SUCCESS) {
-		printf("MD5 does not match. err: %d\n", err);
-		return err;
+	result = esp_loader_flash_write(payload, write_size);
+	if (result != ESP_LOADER_SUCCESS) {
+		printf("\nESP32 Block write fail 0x%x - %d.\n", target_address, result);
 	}
-	printf("Flash verified\n");
+
+	return result;
+}
+
+esp_loader_error_t esp32_verify_flash(){
+#if MD5_ENABLED
+	esp_loader_error_t result;
+
+	result = esp_loader_flash_verify();
+	if (result == ESP_LOADER_ERROR_UNSUPPORTED_FUNC) {
+		printf("ESP8266 does not support flash verify command.");
+		return result;
+	} else if (result != ESP_LOADER_SUCCESS) {
+		printf("MD5 does not match. err: %d\n", result);
+		return result;
+	}
+
+	printf("Flash VERIFY SUCCESS\n");
 #endif
 
 	return ESP_LOADER_SUCCESS;
