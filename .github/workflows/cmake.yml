@@ -19,6 +19,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
     - uses: fiam/arm-none-eabi-gcc@v1
       with: 
         release: '10-2020-q4'
