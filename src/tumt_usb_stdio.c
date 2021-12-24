@@ -42,7 +42,7 @@ static void __no_inline_not_in_flash_func(tumt_stdio_out_chars)(const char *buf,
 		tumt_stdio_data_out_t *stdio_data;
 		stdio_data = tumt_stdio_data_out[(tumt_stdio_data_out_write++)%TUMT_STDIO_QUEUE_LENGTH];
 
-		if(length >= TUMT_STDIO_MAX_STR_LEN){
+		if(length > TUMT_STDIO_MAX_STR_LEN){
 			stdio_data->length = TUMT_STDIO_MAX_STR_LEN;
 			memcpy(stdio_data->buf, buf+(i*(TUMT_STDIO_MAX_STR_LEN)), TUMT_STDIO_MAX_STR_LEN*sizeof(char));
 			length -= TUMT_STDIO_MAX_STR_LEN;
@@ -65,7 +65,8 @@ void __no_inline_not_in_flash_func(tumt_stdio_usb_out_chars)(){
 	critical_section_enter_blocking(&tumt_stdio_out_critical_section);
 	while(tumt_stdio_data_out_read < tumt_stdio_data_out_write){
 		if (tud_cdc_n_connected(CDCD_ITF_STDIO)) {
-			stdio_data = tumt_stdio_data_out[(tumt_stdio_data_out_read++)%TUMT_STDIO_QUEUE_LENGTH];
+			stdio_data = tumt_stdio_data_out[(tumt_stdio_data_out_read)%TUMT_STDIO_QUEUE_LENGTH];
+			tumt_stdio_data_out_read++;
 			int i;
 			for (i = 0; i < stdio_data->length;) {
 				int n = stdio_data->length - i;
@@ -102,10 +103,10 @@ void __no_inline_not_in_flash_func(tumt_stdio_usb_out_chars)(){
 		}
 	}
 
-	if(tumt_stdio_data_out_read == tumt_stdio_data_out_write){
-		tumt_stdio_data_out_read = 0;
-		tumt_stdio_data_out_write = 0;
-	}
+//	if(tumt_stdio_data_out_read == tumt_stdio_data_out_write){
+//		tumt_stdio_data_out_read = 0;
+//		tumt_stdio_data_out_write = 0;
+//	}
 
 	critical_section_exit(&tumt_stdio_out_critical_section);
 }
